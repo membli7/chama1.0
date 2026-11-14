@@ -668,6 +668,14 @@ function initializeStorage() {
         } else {
           state = migrate(await postgresState.loadState(postgresPool));
         }
+        const databaseIdentity = await postgresPool.query(
+          "SELECT current_database() AS database, current_user AS role, (SELECT COUNT(*) FROM app_chama_directory)::int AS directories",
+        );
+        logger.info("PostgreSQL state initialized.", {
+          users: state.users.length,
+          chamas: state.chamas.length,
+          ...databaseIdentity.rows[0],
+        });
         return;
       }
       await persist(state);
