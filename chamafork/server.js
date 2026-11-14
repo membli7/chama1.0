@@ -1714,6 +1714,11 @@ app.post("/api/forgot-pin", pinRecoveryLimiter, pinResetSendCooldown, pinResetSe
       appendJsonEmailCapture(process.env.SMTP_LOG_FILE, info.message);
     }
   } catch (error) {
+    logger.warn("PIN reset email delivery failed.", {
+      code: error?.code,
+      responseCode: error?.responseCode,
+      command: error?.command,
+    });
     delete req.session.pinResetHash;
     delete req.session.pinResetAccountId;
     delete req.session.pinResetExpiresAt;
@@ -3224,7 +3229,12 @@ app.post("/api/otp/request", OTP_RATE_LIMIT, OTP_SEND_COOLDOWN, OTP_SEND_DAILY_L
         }
         res.json(genericOk);
       })
-      .catch(() => {
+      .catch(error => {
+        logger.warn("Sign-in OTP email delivery failed.", {
+          code: error?.code,
+          responseCode: error?.responseCode,
+          command: error?.command,
+        });
         delete req.session.otpHash;
         delete req.session.otpPhone;
         delete req.session.otpExpiresAt;
