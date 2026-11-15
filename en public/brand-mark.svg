@@ -1,9 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
-  <rect width="48" height="48" rx="15" fill="#15344A"/>
-  <circle cx="24" cy="12" r="3.5" fill="#F5F8F6"/>
-  <circle cx="13" cy="17" r="3" fill="#F5F8F6"/>
-  <circle cx="35" cy="17" r="3" fill="#F5F8F6"/>
-  <path d="M16 27c.4-4.1 3.2-6.6 8-6.6s7.6 2.5 8 6.6M6.8 28.5c.2-3.4 2.3-5.5 6.1-5.5 1.5 0 2.8.4 3.8 1.1M41.2 28.5c-.2-3.4-2.3-5.5-6.1-5.5-1.5 0-2.8.4-3.8 1.1" stroke="#53C2A6" stroke-width="2.7" stroke-linecap="round"/>
-  <circle cx="24" cy="35" r="8" fill="#F4C46A" stroke="#15344A" stroke-width="1.5"/>
-  <text x="24" y="37" fill="#15344A" font-family="Arial,sans-serif" font-size="6.5" font-weight="800" text-anchor="middle">KSh</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
+  <g fill="#124f43">
+    <path d="M37 67c0-6.6 7.1-10.7 12.8-7.5l77.2 43.7v106.5L37 166.2V67Z"/>
+    <path d="M219 67c0-6.6-7.1-10.7-12.8-7.5L129 103.2v106.5l90-43.5V67Z"/>
+    <path d="M37 180c30.2 1.8 59.9 10.1 90 25.1v8.4c-29.1-10.8-59.1-17-90-18.2V180Z"/>
+    <path d="M219 180c-30.2 1.8-59.9 10.1-90 25.1v8.4c29.1-10.8 59.1-17 90-18.2V180Z"/>
+    <path d="M37 204.5c30.7 0 61 3.2 90 10.1v8.3c-29.2-4.9-59.5-6.8-90-5.8v-12.6Z"/>
+    <path d="M219 204.5c-30.7 0-61 3.2-90 10.1v8.3c29.2-4.9 59.5-6.8-90-5.8v-12.6Z"/>
+    <circle cx="128" cy="48" r="15"/>
+    <circle cx="91" cy="73" r="13"/>
+    <circle cx="165" cy="73" r="13"/>
+    <circle cx="128" cy="91" r="13"/>
+  </g>
 </svg>
