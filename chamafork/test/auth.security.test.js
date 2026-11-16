@@ -75,7 +75,7 @@ test("first-account setup requires the configured operator bootstrap credential"
   assert.equal(unchanged.users.length, 0);
   assert.equal(unchanged.chamas.length, 0);
   assert.equal((await setup(bootstrapSecret)).status, 201);
-  assert.equal((await setup()).status, 409);
+  assert.equal((await setup()).status, 403);
   const stored = JSON.parse(fs.readFileSync(server.dataFile, "utf8"));
   assert.equal(JSON.stringify(stored).includes(bootstrapSecret), false);
 });

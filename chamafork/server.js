@@ -453,14 +453,15 @@ function pendingSubscriptionForPayment(source, payment, config, at = Date.now())
 function memberCapFor(source, chamaId) {
   return null;
 }
-function settingAmount(key, fallback) {
-  const raw = state.settings?.[key];
+function settingAmount(key, fallback, chamaId, source = state) {
+  const chama = chamaId ? (source.chamas || []).find(item => item.id === chamaId) : null;
+  const raw = chama?.settings?.[key] ?? source.settings?.[key];
   if (raw === undefined || raw === null || raw === "") return fallback;
   const value = Number(raw);
   return Number.isSafeInteger(value) && value >= 0 ? value : fallback;
 }
-function configuredWelfareFee() { return settingAmount("welfareMonthlyFee", WELFARE_MONTHLY_FEE); }
-function configuredLatePenalty() { return settingAmount("lateContributionPenalty", LATE_CONTRIBUTION_PENALTY); }
+function configuredWelfareFee(chamaId, source) { return settingAmount("welfareMonthlyFee", WELFARE_MONTHLY_FEE, chamaId, source); }
+function configuredLatePenalty(chamaId, source) { return settingAmount("lateContributionPenalty", LATE_CONTRIBUTION_PENALTY, chamaId, source); }
 function configuredLoanMonthlyRate(chamaId, source = state) {
   const chamaRate = source.chamas?.find(item => item.id === chamaId)?.settings?.loanMonthlyRatePercent;
   const raw = chamaRate ?? source.settings?.loanMonthlyRatePercent;
@@ -472,9 +473,12 @@ function configuredLoanMonthlyRatePercent(chamaId, source = state) {
   return configuredLoanMonthlyRate(chamaId, source) * 100;
 }
 // A month's meeting date overrides the default deadline day, which applies to every other month.
-function scheduledMeetingDate(month) {
-  const custom = state.settings?.meetingDates?.[month];
-  return custom || `${month}-${String(state.settings?.defaultDeadlineDay || DEFAULT_DEADLINE_DAY).padStart(2, "0")}`;
+function scheduledMeetingDate(month, chamaId, source = state) {
+  const chamaDates = source.settings?.meetingDatesByChama?.[chamaId];
+  const custom = chamaDates?.[month] ?? source.settings?.meetingDates?.[month];
+  const chama = chamaId ? (source.chamas || []).find(item => item.id === chamaId) : null;
+  const deadlineDay = chama?.settings?.defaultDeadlineDay ?? source.settings?.defaultDeadlineDay ?? DEFAULT_DEADLINE_DAY;
+  return custom || `${month}-${String(deadlineDay).padStart(2, "0")}`;
 }
 function nairobiDate(value) { return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Nairobi" }).format(new Date(value)); }
 function todayInNairobi() { return nairobiDate(new Date()); }
@@ -561,6 +565,9 @@ function migrate(raw) {
     for (const chama of raw.chamas) {
       if (!chama.settings || typeof chama.settings !== "object" || Array.isArray(chama.settings)) chama.settings = {};
       if (chama.settings.loanMonthlyRatePercent === undefined || chama.settings.loanMonthlyRatePercent === null) chama.settings.loanMonthlyRatePercent = legacyRate;
+      if (chama.settings.defaultDeadlineDay === undefined) chama.settings.defaultDeadlineDay = raw.settings?.defaultDeadlineDay ?? DEFAULT_DEADLINE_DAY;
+      if (chama.settings.welfareMonthlyFee === undefined) chama.settings.welfareMonthlyFee = raw.settings?.welfareMonthlyFee ?? WELFARE_MONTHLY_FEE;
+      if (chama.settings.lateContributionPenalty === undefined) chama.settings.lateContributionPenalty = raw.settings?.lateContributionPenalty ?? LATE_CONTRIBUTION_PENALTY;
     }
     backfillContributionSplits(raw);
     return raw;
@@ -903,13 +910,18 @@ async function processDueLeadershipElections() {
 async function processDuePushReminders() {
   return withSerializedWrite(async () => {
     const updated = structuredClone(state);
-    const added = collectDueReminders(updated, {
-      today: todayInNairobi(),
-      deadlineForMonth: month => scheduledMeetingDate(month),
-      minimumContribution: configuredWelfareFee(),
-      transactionDate,
-      at: now(),
-    });
+    let added = [];
+    for (const chama of updated.chamas || []) {
+      const chamaAdded = collectDueReminders(updated, {
+        today: todayInNairobi(),
+        deadlineForMonth: month => scheduledMeetingDate(month, chama.id, updated),
+        minimumContribution: configuredWelfareFee(chama.id, updated),
+        transactionDate,
+        at: now(),
+        chamaId: chama.id,
+      });
+      added = added.concat(chamaAdded);
+    }
     if (!added.length) return 0;
     await persist(updated);
     return added.length;
@@ -1585,9 +1597,9 @@ app.get("/api/bootstrap", async (req, res, next) => {
   }
   return res.json({ session: sessionData, health: { status: "ok" }, summary });
 });
-app.get("/api/setup", (req, res) => { res.json({ open: state.users.length === 0 && state.chamas.length === 0 }); });
+app.get("/api/setup", (req, res) => { res.json({ open: true }); });
 app.post("/api/setup", setupLimiter, async (req, res, next) => {
-  if (state.users.length > 0 || state.chamas.length > 0) return res.status(409).json({ message: "Initial setup has already been completed." });
+  // Multi-tenant: registration is always open for new chamas
   const bootstrapSecret = process.env.SETUP_BOOTSTRAP_SECRET;
   if (bootstrapSecret && !bootstrapSecretMatches(req.get("X-Setup-Bootstrap-Secret"), bootstrapSecret)) return res.status(403).json({ message: "An operator bootstrap code is required for initial setup." });
   if (!hasAdultEligibilityDeclaration(req.body?.ageConfirmed)) return res.status(400).json({ message: AGE_ELIGIBILITY_MESSAGE });
@@ -1616,11 +1628,15 @@ app.post("/api/setup", setupLimiter, async (req, res, next) => {
   const chamaId = newId();
   if (!Array.isArray(updated.chamas)) updated.chamas = [];
   if (!updated.settings || typeof updated.settings !== "object") updated.settings = { defaultDeadlineDay: DEFAULT_DEADLINE_DAY, meetingDates: {} };
-  updated.settings.defaultDeadlineDay = deadlineDay;
-  updated.settings.welfareMonthlyFee = welfareMonthlyFee;
-  updated.settings.lateContributionPenalty = lateContributionPenalty;
-  updated.settings.loanMonthlyRatePercent = loanMonthlyRatePercent;
-  updated.chamas.push({ id: chamaId, name: chamaName, createdAt: now(), settings: { loanMonthlyRatePercent }, subscription: unpaidSubscription(now()) });
+  // For the first chama, also set global settings as defaults for backward compat
+  if (updated.chamas.length === 0) {
+    updated.settings.defaultDeadlineDay = deadlineDay;
+    updated.settings.welfareMonthlyFee = welfareMonthlyFee;
+    updated.settings.lateContributionPenalty = lateContributionPenalty;
+    updated.settings.loanMonthlyRatePercent = loanMonthlyRatePercent;
+  }
+  const chamaSettings = { defaultDeadlineDay: deadlineDay, welfareMonthlyFee, lateContributionPenalty, loanMonthlyRatePercent };
+  updated.chamas.push({ id: chamaId, name: chamaName, createdAt: now(), settings: chamaSettings, subscription: unpaidSubscription(now()) });
   const joinedAt = now();
   const user = { id: newId(), name, phone, email, role: "chairperson", status: "active", pinHash: pinHash(pin), mustChangePin: false, createdAt: joinedAt, joinedAt, chamaId };
   const acceptanceSource = "initial-setup";
@@ -2361,11 +2377,11 @@ app.post("/api/contributions", requireAuth, requirePinChanged, requireRole("trea
   if (hasReceiptReferenceConflict(state, req.user.chamaId, parsedReference.normalized)) return res.status(409).json({ message: "That receipt reference has already been used in this chama." });
   const contributionMonth = date.slice(0, 7);
   const welfarePaid = scopeToChama(state.transactions, req.user.chamaId).some(item => item.memberId === member.id && item.contributionMonth === contributionMonth && item.welfareAmount > 0);
-  const meetingDate = scheduledMeetingDate(contributionMonth);
-  const newPenalty = date > meetingDate ? configuredLatePenalty() : 0;
+  const meetingDate = scheduledMeetingDate(contributionMonth, req.user.chamaId);
+  const newPenalty = date > meetingDate ? configuredLatePenalty(req.user.chamaId) : 0;
   const outstandingPenalties = scopeToChama(state.penalties, req.user.chamaId).filter(item => item.memberId === member.id && item.status === "outstanding");
   const penaltyDue = outstandingPenalties.reduce((sum, item) => sum + item.amount, 0) + newPenalty;
-  const welfare = welfarePaid ? 0 : configuredWelfareFee();
+  const welfare = welfarePaid ? 0 : configuredWelfareFee(req.user.chamaId);
   if (amount < penaltyDue + welfare) return res.status(400).json({ message: `This payment must cover ${penaltyDue ? `KES ${penaltyDue} in penalties and ` : ""}the KES ${welfare} welfare fee.` });
   const shareCapital = amount - penaltyDue - welfare;
   const updated = structuredClone(state); const savedMember = scopeToChama(updated.users, req.user.chamaId).find(item => item.id === member.id);
@@ -2406,7 +2422,7 @@ app.post("/api/contributions/:id/correct-date", requireAuth, requirePinChanged, 
   if (date.slice(0, 7) !== contributionMonth) {
     return res.status(409).json({ message: "A date correction must remain within the original contribution month." });
   }
-  const deadline = scheduledMeetingDate(contributionMonth);
+  const deadline = scheduledMeetingDate(contributionMonth, req.user.chamaId);
   if (!isValidCalendarDate(deadline) || (oldDate > deadline) !== (date > deadline)) {
     return res.status(409).json({ message: "A date correction cannot change whether the contribution was on time or late." });
   }
@@ -2475,7 +2491,7 @@ app.post("/api/loans/repay", requireAuth, requirePinChanged, requireRole("treasu
 app.post("/api/penalties/assess", requireAuth, requirePinChanged, requireRole("chairperson", "secretary"), requireActiveSubscription, idempotent((req, res, next) => {
   const month = clean(req.body?.month) || todayInNairobi().slice(0, 7);
   if (!/^\d{4}-\d{2}$/.test(month)) return res.status(400).json({ message: "Enter the month as YYYY-MM." });
-  const deadline = scheduledMeetingDate(month);
+  const deadline = scheduledMeetingDate(month, req.user.chamaId);
   if (todayInNairobi() <= deadline) return res.status(409).json({ message: `The deadline for ${month} is ${deadline}. Assess penalties after it has passed.` });
   const updated = structuredClone(state); const assessed = [];
   const chamaMembers = scopeToChama(updated.users, req.user.chamaId).filter(item => item.status === "active");
@@ -2483,10 +2499,10 @@ app.post("/api/penalties/assess", requireAuth, requirePinChanged, requireRole("c
   const chamaPenalties = scopeToChama(updated.penalties, req.user.chamaId);
   for (const member of chamaMembers) {
     const paidByDeadline = chamaTransactions.filter(item => item.memberId === member.id && item.paymentType === "Monthly Contribution" && (item.contributionMonth || nairobiDate(item.at).slice(0, 7)) === month && transactionDate(item) <= deadline).reduce((sum, item) => sum + item.amount, 0);
-    if (paidByDeadline >= configuredWelfareFee()) continue;
+    if (paidByDeadline >= configuredWelfareFee(req.user.chamaId)) continue;
     // A late-payment penalty for this month already covers the miss.
     if (chamaPenalties.some(item => item.memberId === member.id && (item.month === month || String(item.date || "").startsWith(month)))) continue;
-    const penaltyAmount = configuredLatePenalty();
+    const penaltyAmount = configuredLatePenalty(req.user.chamaId);
     if (penaltyAmount === 0) continue;
     const charge = { id: newId(), memberId: member.id, memberName: member.name, amount: penaltyAmount, reason: "Missed monthly contribution", month, status: "outstanding", transactionId: null, paidTransactionId: null, date: todayInNairobi(), at: now(), chamaId: req.user.chamaId };
     updated.penalties.push(charge);

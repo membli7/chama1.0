@@ -110,12 +110,7 @@ if (new URLSearchParams(window.location.search).get("new-chama") === "1") {
       return result;
     })
     .then(result => {
-      if (result.open) {
-        if (!registrationAgeDialog.open) registrationAgeDialog.showModal();
-        return;
-      }
-      registrationForm.hidden = true;
-      document.querySelector("#new-chama-existing-instance").hidden = false;
+      if (!registrationAgeDialog.open) registrationAgeDialog.showModal();
     })
     .catch(error => {
       registrationNotice.textContent = translateRegistrationText(error instanceof TypeError

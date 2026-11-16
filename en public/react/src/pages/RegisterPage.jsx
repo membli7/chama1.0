@@ -16,7 +16,6 @@ export default function RegisterPage() {
   const [ageGateNotice, setAgeGateNotice] = useState("");
   const [ageConfirmed, setAgeConfirmed] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [showExistingInstance, setShowExistingInstance] = useState(false);
   const [registrationPageReady, setRegistrationPageReady] = useState(!checkSetupBeforeShowingForm);
 
   useEffect(() => {
@@ -30,15 +29,15 @@ export default function RegisterPage() {
 
   useEffect(() => {
     window.jiraniI18n?.apply(rootRef.current || document.documentElement);
-  }, [notice, ageGateNotice, ageConfirmed, showExistingInstance, submitting]);
+  }, [notice, ageGateNotice, ageConfirmed, submitting]);
 
   useEffect(() => {
-    if (!registrationPageReady || showExistingInstance || ageConfirmed === "true") return undefined;
+    if (!registrationPageReady || ageConfirmed === "true") return undefined;
     const dialog = ageGateDialogRef.current;
     if (!dialog) return undefined;
     if (!dialog.open) dialog.showModal();
     return () => { if (dialog.open) dialog.close(); };
-  }, [registrationPageReady, showExistingInstance, ageConfirmed]);
+  }, [registrationPageReady, ageConfirmed]);
 
   useEffect(() => {
     if (ageConfirmed === "true") formRef.current?.querySelector('input:not([type="hidden"])')?.focus();
@@ -50,7 +49,7 @@ export default function RegisterPage() {
     setupIsOpen().then(open => {
       if (!active) return;
       if (open) setRegistrationPageReady(true);
-      else setShowExistingInstance(true);
+      else setRegistrationPageReady(true);
     }).catch(error => {
       if (!active) return;
       const message = error instanceof TypeError
@@ -122,12 +121,7 @@ export default function RegisterPage() {
             <p className="login-intro">Register your group and create the chairperson account. You will be signed in when setup is complete.</p>
           </section>
           <section className="auth-page-forms" aria-label="New chama registration" data-i18n-aria-label="newChamaRegistration">
-            <section id="new-chama-existing-instance" className="login-card" hidden={!showExistingInstance}>
-              <h2>This instance is already set up</h2>
-              <p>To create a separate chama, open this app on a separate instance connected to an empty database. This instance’s existing records will remain unchanged.</p>
-              <a className="button-primary" href="/member-login.html">Sign in to this instance</a>
-            </section>
-            <form id="register-chama-form" className="login-card" ref={formRef} onSubmit={handleSubmit} hidden={showExistingInstance || ageConfirmed !== "true"}>
+                        <form id="register-chama-form" className="login-card" ref={formRef} onSubmit={handleSubmit} hidden={ageConfirmed !== "true"}>
               <h2>Chama and chairperson details</h2>
               <p className="form-note"><span data-i18n="policyReviewPrompt">Before entering your details, review:</span>{" "}<a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="termsAndConditions">Terms and Conditions</a> · <a href="/privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="privacyNotice">Privacy Notice</a></p>
               <p>All fields are required. Your PIN must have 6 to 12 digits.</p>

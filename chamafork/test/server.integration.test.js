@@ -355,17 +355,19 @@ describe("Jirani Chama server", () => {
     assert.equal(setup.status, 201);
     const duplicateSetup = await request("/api/setup", {
       method: "POST",
-      body: JSON.stringify({ chamaName: "Another Chama", name: "Second Chair", phone: "0712345688", email: "second@example.test", pin: "654321" }),
+      body: JSON.stringify({ chamaName: "Another Chama", name: "Second Chair", phone: "0712345688", email: "second@example.test", pin: "654321", deadlineDay: 5, welfareMonthlyFee: 500, lateContributionPenalty: 200, loanMonthlyRatePercent: 5, termsAccepted: "true", privacyNoticeAcknowledged: "true", ageConfirmed: "true" }),
     });
-    assert.equal(duplicateSetup.status, 409);
+    assert.equal(duplicateSetup.status, 201, "multi-tenant: second chama registration should succeed");
     const setupBody = await json(setup);
     assert.equal(setupBody.user.role, "chairperson");
     assert.match(setupBody.user.phone, /^\+254/);
     const savedState = JSON.parse(fs.readFileSync(path.join(tempDir, "data.json"), "utf8"));
-    assert.equal(savedState.chamas.length, 1);
+    assert.equal(savedState.chamas.length, 2, "multi-tenant: both chamas should be saved");
     assert.equal(savedState.chamas[0].name, "Test Chama");
     assert.equal(savedState.chamas[0].subscription.status, "unpaid");
     assert.deepEqual(savedState.settings, { defaultDeadlineDay: 10, welfareMonthlyFee: 350, lateContributionPenalty: 75, loanMonthlyRatePercent: 7.5, meetingDates: {} });
+    assert.deepEqual(savedState.chamas[0].settings, { defaultDeadlineDay: 10, welfareMonthlyFee: 350, lateContributionPenalty: 75, loanMonthlyRatePercent: 7.5 }, "first chama per-chama settings");
+    assert.deepEqual(savedState.chamas[1].settings, { defaultDeadlineDay: 5, welfareMonthlyFee: 500, lateContributionPenalty: 200, loanMonthlyRatePercent: 5 }, "second chama per-chama settings");
     assert.equal(savedState.users[0].chamaId, savedState.chamas[0].id);
     const termsAcceptanceEvent = savedState.auditLog.find(item => item.type === "terms.accepted");
     assert.ok(termsAcceptanceEvent);
@@ -500,7 +502,7 @@ describe("Jirani Chama server", () => {
     });
     assert.equal(missingTerms.status, 400);
     assert.match((await json(missingTerms)).message, /Terms and Conditions/);
-    assert.equal(JSON.parse(fs.readFileSync(path.join(tempDir, "data.json"), "utf8")).users.length, 1);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(tempDir, "data.json"), "utf8")).users.length, 2);
 
     const missingPrivacyAcknowledgment = await request("/api/invitations/activate", {
       method: "POST",

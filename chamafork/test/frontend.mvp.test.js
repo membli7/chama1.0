@@ -550,7 +550,7 @@ test("landing registration opens a complete first-chama setup page", () => {
   assert.match(registerPage, /<dialog id="register-age-dialog"/);
   assert.match(registerPage, /onCancel=\{event => event\.preventDefault\(\)\}/);
   assert.match(registerPage, /ageConfirmed === "true" \? "true" : ""/);
-  assert.match(registerPage, /hidden=\{showExistingInstance \|\| ageConfirmed !== "true"\}/);
+  assert.match(registerPage, /hidden=\{ageConfirmed !== "true"\}/);
   assert.doesNotMatch(registerPage, /name="ageConfirmed" type="radio"/);
   assert.match(registerPage, /disabled=\{submitting \|\| ageConfirmed !== "true"\}/);
   assert.match(registerPage, /values\.ageConfirmed !== "true"/);
@@ -628,7 +628,7 @@ test("classic new-Chama signup blocks No, prevents modal dismissal, and submits 
   const elements = new Map([
     ["#register-chama-form", registrationForm], ["#register-notice", registrationNotice],
     ["#register-age-dialog", ageDialog], ["#register-age-block", ageBlock],
-    ["#new-chama-existing-instance", fakeControl({ hidden: true })],
+
   ]);
   const fetchCalls = [];
   const navigations = [];
@@ -1061,7 +1061,7 @@ test("header icons, profile actions, live dot, muted background, and short menu 
   assert.match(profilePage, /profileModeFromSearch\(window\.location\.search\)/);
   assert.match(profileModeSource, /mode === "view"/);
   assert.match(profileModeSource, /mode === "edit"/);
-  assert.match(registerPage, /id="new-chama-existing-instance"/);
+
   assert.match(registerPage, /get\("new-chama"\) === "1"/);
   assert.match(memberLoginPage, /id="login-page-title"/);
   assert.match(memberLoginPage, /get\("switch-chama"\) === "1"/);
