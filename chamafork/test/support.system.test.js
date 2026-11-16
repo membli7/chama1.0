@@ -493,6 +493,85 @@ test("Frequently Asked Questions (FAQ) System", async (t) => {
   });
 });
 
+test("In-App AI Support Bubble (100% In-House, No External API)", async (t) => {
+  await t.test("1. Returns curated starter suggestions", async () => {
+    const res = await req("/api/support/ai/suggestions");
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.ok(Array.isArray(body.data));
+    assert.equal(body.data.length >= 3, true);
+    assert.equal(body.data.some(s => s.toLowerCase().includes("loan")), true);
+  });
+
+  await t.test("2. Answers loan inquiries with 3x shares rule and guarantors requirement", async () => {
+    const res = await req("/api/support/ai/chat", {
+      method: "POST",
+      cookie: memberCookie,
+      body: { message: "How do I apply for a loan and how much can I borrow?" },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.ok(body.data.reply);
+    assert.equal(body.data.reply.includes("3 times your share capital"), true);
+    assert.equal(body.data.reply.includes("guarantors"), true);
+    assert.ok(Array.isArray(body.data.actions));
+    assert.equal(body.data.actions.some(a => a.target === "#loans-panel"), true);
+  });
+
+  await t.test("3. Answers contribution and welfare inquiries with deadline and penalty info", async () => {
+    const res = await req("/api/support/ai/chat", {
+      method: "POST",
+      cookie: memberCookie,
+      body: { message: "When is the monthly contribution due and what is the late penalty?" },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.ok(body.data.reply);
+    assert.equal(body.data.reply.toLowerCase().includes("welfare"), true);
+    assert.equal(body.data.reply.toLowerCase().includes("penalty"), true);
+    assert.equal(body.data.actions.some(a => a.target === "#ledger-panel"), true);
+  });
+
+  await t.test("4. Answers PIN recovery inquiries with 6-12 digit rule", async () => {
+    const res = await req("/api/support/ai/chat", {
+      method: "POST",
+      body: { message: "I forgot my PIN, how can I reset it?" },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.ok(body.data.reply);
+    assert.equal(body.data.reply.includes("6 to 12 digit"), true);
+    assert.equal(body.data.reply.includes("Forgot PIN?"), true);
+  });
+
+  await t.test("5. Escalates directly to human support ticket on request", async () => {
+    const res = await req("/api/support/ai/chat", {
+      method: "POST",
+      cookie: memberCookie,
+      body: { message: "I want to talk to a human agent right now" },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.ok(body.data.reply);
+    assert.equal(body.data.reply.toLowerCase().includes("human"), true);
+    assert.equal(body.data.actions.some(a => a.action === "open_ticket"), true);
+  });
+
+  await t.test("6. Validates empty input and excessive length", async () => {
+    const emptyRes = await req("/api/support/ai/chat", {
+      method: "POST",
+      body: { message: "" },
+    });
+    assert.equal(emptyRes.status, 400);
+
+    const longRes = await req("/api/support/ai/chat", {
+      method: "POST",
+      body: { message: "a".repeat(2500) },
+    });
+    assert.equal(longRes.status, 400);
+  });
+});
+
 test("Audit log verification for support events", async () => {
   const res = await req("/api/audit-log", { cookie: chairCookie });
   assert.equal(res.status, 200);

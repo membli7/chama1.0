@@ -27,6 +27,7 @@ import SupportAgentPanel from "./components/SupportAgentPanel.jsx";
 import SupportAdminPanel from "./components/SupportAdminPanel.jsx";
 import FaqPanel from "./components/FaqPanel.jsx";
 import FaqAdminPanel from "./components/FaqAdminPanel.jsx";
+import AiSupportBubble from "./components/AiSupportBubble.jsx";
 
 const legacyControllerNames = new Set([
   "chama.js",
@@ -236,9 +237,17 @@ function DashboardEntry() {
 
 export default function App() {
   const pageKey = pageForPath(window.location.pathname);
-  if (pageKey === "profile") return <ProfilePage />;
-  if (pageKey === "memberLogin") return <MemberLoginPage />;
-  if (pageKey === "register") return <RegisterPage />;
-  if (pageKey === "dashboard") return <DashboardEntry />;
-  return <LegacyPage pageKey={pageKey} />;
+  let pageContent;
+  if (pageKey === "profile") pageContent = <ProfilePage />;
+  else if (pageKey === "memberLogin") pageContent = <MemberLoginPage />;
+  else if (pageKey === "register") pageContent = <RegisterPage />;
+  else if (pageKey === "dashboard") pageContent = <DashboardEntry />;
+  else pageContent = <LegacyPage pageKey={pageKey} />;
+
+  return (
+    <>
+      {pageContent}
+      <AiSupportBubble />
+    </>
+  );
 }

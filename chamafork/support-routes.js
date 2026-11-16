@@ -9,6 +9,7 @@ const {
   VALID_PRIORITIES,
   VALID_CATEGORIES,
   DEFAULT_FAQS,
+  STARTER_SUGGESTIONS,
   isStaffUser,
   isPlatformAdmin,
   isChamaAdmin,
@@ -16,6 +17,7 @@ const {
   sanitizeTicketForUser,
   keywordSearchFaqs,
   generateTicketNumber,
+  processAiChat,
 } = require("./support-service");
 
 const ALLOWED_MIME_TYPES = new Set([
@@ -1363,6 +1365,33 @@ function registerSupportRoutes(app, deps) {
         frequentlySubmittedCategories: frequentlySubmitted,
       },
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 4. In-App AI Support Assistant Bubble Endpoints (100% In-House, No External API)
+  // ---------------------------------------------------------------------------
+
+  // Get starter suggestions for the AI chat bubble
+  app.get("/api/support/ai/suggestions", (req, res) => {
+    return res.json({ data: STARTER_SUGGESTIONS });
+  });
+
+  // Chat with the in-app AI assistant (No external LLM/Gemini API calls)
+  app.post("/api/support/ai/chat", (req, res) => {
+    const state = ensureSupportState(getState());
+    const message = clean(req.body?.message || "");
+
+    if (!message || message.length > 2000) {
+      return res.status(400).json({ message: "Please provide a valid question under 2000 characters." });
+    }
+
+    const context = {
+      user: req.user ? { id: req.user.id, name: req.user.name, role: req.user.role, chamaId: req.user.chamaId } : null,
+      settings: state.settings || {},
+    };
+
+    const aiResponse = processAiChat(message, context, state);
+    return res.json({ data: aiResponse });
   });
 }
 
