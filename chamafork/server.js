@@ -53,6 +53,8 @@ const {
 } = require("./observability");
 const { acquireRuntimeLock, assertLeastPrivilegeRuntimeRole, createPostgresPool } = require("./db/postgres");
 const postgresState = require("./repo/postgres-state");
+const supportService = require("./support-service");
+const { registerSupportRoutes } = require("./support-routes");
 
 // ---------------------------------------------------------------------------
 // Redis pub/sub + summary cache (Phase 2)
@@ -369,7 +371,7 @@ function internationalPhone(phone) {
   const normalized = normalizePhone(phone);
   return normalized ? normalized.replace(/\D/g, "") : null;
 }
-function emptyState() { return { version: 2, chamas: [], users: [], transactions: [], loans: [], payouts: [], invitations: [], leadershipChanges: [], pendingMpesas: [], idempotency: {}, registers: [], auditLog: [], welfareReserve: 0, penalties: [], settings: { defaultDeadlineDay: DEFAULT_DEADLINE_DAY, welfareMonthlyFee: WELFARE_MONTHLY_FEE, lateContributionPenalty: LATE_CONTRIBUTION_PENALTY, loanMonthlyRatePercent: LOAN_MONTHLY_RATE * 100, meetingDates: {} }, dividendCycles: [], messages: [] }; }
+function emptyState() { return { version: 2, chamas: [], users: [], transactions: [], loans: [], payouts: [], invitations: [], leadershipChanges: [], pendingMpesas: [], idempotency: {}, registers: [], auditLog: [], welfareReserve: 0, penalties: [], settings: { defaultDeadlineDay: DEFAULT_DEADLINE_DAY, welfareMonthlyFee: WELFARE_MONTHLY_FEE, lateContributionPenalty: LATE_CONTRIBUTION_PENALTY, loanMonthlyRatePercent: LOAN_MONTHLY_RATE * 100, meetingDates: {} }, dividendCycles: [], messages: [], supportTickets: [], supportAgents: [], faqs: supportService.DEFAULT_FAQS.map(f => structuredClone(f)), faqFeedback: [] }; }
 function unpaidSubscription(startedAt = now(), previous = null) {
   const starts = new Date(startedAt);
   const safeStart = Number.isNaN(starts.getTime()) ? new Date() : starts;
@@ -546,7 +548,11 @@ function migrate(raw) {
     if (!Array.isArray(raw.messages)) raw.messages = [];
     if (!Array.isArray(raw.transactions)) raw.transactions = [];
     if (!Array.isArray(raw.chamas)) raw.chamas = [];
-    const tenantCollections = ["users", "transactions", "loans", "payouts", "invitations", "leadershipChanges", "registers", "dividendCycles", "messages", "penalties"];
+    if (!Array.isArray(raw.supportTickets)) raw.supportTickets = [];
+    if (!Array.isArray(raw.supportAgents)) raw.supportAgents = [];
+    if (!Array.isArray(raw.faqs) || raw.faqs.length === 0) raw.faqs = supportService.DEFAULT_FAQS.map(f => structuredClone(f));
+    if (!Array.isArray(raw.faqFeedback)) raw.faqFeedback = [];
+    const tenantCollections = ["users", "transactions", "loans", "payouts", "invitations", "leadershipChanges", "registers", "dividendCycles", "messages", "penalties", "supportTickets"];
     for (const key of tenantCollections) if (!Array.isArray(raw[key])) raw[key] = [];
     const hasLegacyRecords = tenantCollections.some(key => raw[key].length > 0);
     let legacyChama = raw.chamas.find(chama => chama?.id);
@@ -1138,6 +1144,11 @@ function permissionsFor(user, usersInChama = scopeToChama(state.users, user.cham
     simulatePayments: user.role === "treasurer" && SIMULATED_PAYMENTS_ENABLED,
     decideLoans: false,
     requestLoans: true,
+    isSupportAgent: user.role === "support_agent",
+    isPlatformAdmin: ["platform_admin", "admin"].includes(user.role),
+    canManageSupport: ["platform_admin", "admin", "chairperson"].includes(user.role),
+    canManageFaq: ["support_agent", "platform_admin", "admin"].includes(user.role),
+    canAccessSupportPortal: true,
   };
 }
 function dashboardFor(user) {
@@ -3033,6 +3044,24 @@ app.get("/api/audit-log", requireAuth, requirePinChanged, requireRole("chairpers
     entry.chamaId || userChamas.get(entry.by?.id) || userChamas.get(entry.memberId)
   ).slice().reverse();
   return res.json({ data });
+});
+
+registerSupportRoutes(app, {
+  getState: () => state,
+  state,
+  persist,
+  newId,
+  now,
+  requireAuth,
+  requirePinChanged,
+  requireRole,
+  clean,
+  normalizePhone,
+  pinHash,
+  validPin,
+  displayPhone,
+  baseDir: __dirname,
+  logger,
 });
 
 // ---------------------------------------------------------------------------

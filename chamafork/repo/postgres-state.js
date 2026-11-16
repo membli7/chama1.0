@@ -30,6 +30,7 @@ function stateTemplate() {
     invitations: [], leadershipChanges: [], pendingMpesas: [], idempotency: {},
     registers: [], auditLog: [], ledgerEntries: [], welfareReserve: 0, penalties: [],
     settings: { defaultDeadlineDay: 5, welfareMonthlyFee: 500, lateContributionPenalty: 200, loanMonthlyRatePercent: 5, meetingDates: {} }, dividendCycles: [], messages: [],
+    supportTickets: [], supportAgents: [], faqs: [], faqFeedback: [],
   };
 }
 
@@ -574,6 +575,10 @@ async function loadState(pool) {
         const stateData = fromStoredData(bundle.chama.state_data || {});
         result.idempotency = stateData.idempotency || {};
         result.welfareReserve = stateData.welfareReserve || 0;
+        result.supportTickets = stateData.supportTickets || [];
+        result.supportAgents = stateData.supportAgents || [];
+        result.faqs = stateData.faqs || [];
+        result.faqFeedback = stateData.faqFeedback || [];
       }
     }
     result.transactions.push(...bundle.transactions.map(row => recordFromRow(row, externalId)));

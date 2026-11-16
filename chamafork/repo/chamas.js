@@ -17,7 +17,14 @@ function row(chama, state, order, tenantId) {
     source_id: String(chama.id),
     name: String(chama.name || "Chama"),
     settings: toStoredData(state.settings || {}),
-    state_data: toStoredData({ idempotency: state.idempotency || {}, welfareReserve: state.welfareReserve || 0 }),
+    state_data: toStoredData({
+      idempotency: state.idempotency || {},
+      welfareReserve: state.welfareReserve || 0,
+      supportTickets: state.supportTickets || [],
+      supportAgents: state.supportAgents || [],
+      faqs: state.faqs || [],
+      faqFeedback: state.faqFeedback || [],
+    }),
     record_data: toStoredData(chama),
     record_order: order,
   };

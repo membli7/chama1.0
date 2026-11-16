@@ -7,6 +7,7 @@
         <link rel="icon" type="image/svg+xml" href="/brand-mark.svg">
         <link rel="stylesheet" href="/chama.css?v=20261110.2">
         <link rel="stylesheet" href="/landing-theme.css?v=20261112.1">
+        <link rel="stylesheet" href="/support.css?v=20261116.1">
     </head>
 <body class="landing-mode">
  <header class="topbar">
@@ -68,6 +69,8 @@
   <nav class="menu-bar" id="menu-bar" aria-label="Sections" data-i18n-aria-label="sectionsLabel" aria-hidden="false">
       <a href="#dashboard" data-panel="dashboard">Dashboard</a>
       <a href="#help-panel" data-panel="help-panel" data-i18n="helpGuideLabel">Help &amp; Guide</a>
+      <a href="#faq-panel" data-panel="faq-panel">FAQ</a>
+      <a href="#support-panel" data-panel="support-panel">Support</a>
       <a href="#ledger-panel" data-panel="ledger-panel">Ledger</a>
       <a href="#group-contributions-title" data-panel="overview" data-contributions-link data-i18n="contributionsNav">Contributions</a>
       <a href="#payment-panel" data-panel="payment-panel" data-i18n="payment">Record a cash payment</a>
@@ -96,6 +99,9 @@
           <a href="#dividend-panel" data-panel="dividend-panel">Dividends</a>
           <a href="#cash-flows-panel" data-panel="cash-flows-panel" data-i18n="monthCloseNav">Monthly close</a>
           <a href="#invite-panel" data-panel="invite-panel">Invite</a>
+          <a href="#support-agent-panel" data-panel="support-agent-panel">Agent Portal</a>
+          <a href="#support-admin-panel" data-panel="support-admin-panel">Support Admin</a>
+          <a href="#faq-admin-panel" data-panel="faq-admin-panel">FAQ Admin</a>
         </div>
       </div>
       <a href="#chat-panel" data-panel="chat-panel">Group chat</a>
@@ -233,6 +239,21 @@
     </section>
     <section class="panel help-guide-panel" id="help-panel" aria-labelledby="help-guide-title">
         <div id="react-help-guide-root"></div>
+    </section>
+    <section class="panel" id="faq-panel" aria-labelledby="faq-title" hidden>
+        <div id="react-faq-root"></div>
+    </section>
+    <section class="panel" id="support-panel" aria-labelledby="support-title" hidden>
+        <div id="react-support-root"></div>
+    </section>
+    <section class="panel" id="support-agent-panel" aria-labelledby="support-agent-title" hidden>
+        <div id="react-support-agent-root"></div>
+    </section>
+    <section class="panel" id="support-admin-panel" aria-labelledby="support-admin-title" hidden>
+        <div id="react-support-admin-root"></div>
+    </section>
+    <section class="panel" id="faq-admin-panel" aria-labelledby="faq-admin-title" hidden>
+        <div id="react-faq-admin-root"></div>
     </section>
   </aside></div>
  </main>

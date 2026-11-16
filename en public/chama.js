@@ -272,6 +272,16 @@ function render() {
   $("#dividend-panel").hidden = !permissions.manageDividends;
   $("#cash-flows-panel").hidden = user.role === "member";
   $("#leadership-elections-panel").hidden = false;
+  const faqPanel = $("#faq-panel");
+  if (faqPanel) faqPanel.hidden = false;
+  const supportPanel = $("#support-panel");
+  if (supportPanel) supportPanel.hidden = false;
+  const supportAgentPanel = $("#support-agent-panel");
+  if (supportAgentPanel) supportAgentPanel.hidden = !permissions.isSupportAgent && !permissions.isPlatformAdmin;
+  const supportAdminPanel = $("#support-admin-panel");
+  if (supportAdminPanel) supportAdminPanel.hidden = !permissions.canManageSupport;
+  const faqAdminPanel = $("#faq-admin-panel");
+  if (faqAdminPanel) faqAdminPanel.hidden = !permissions.canManageFaq;
   if (user.mustChangePin) notice("Change your temporary PIN before making any records.", true);
 
   $("#app").hidden = false; $("#login").hidden = true;

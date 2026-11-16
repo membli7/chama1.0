@@ -39,7 +39,7 @@ async function main() {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    for (const migration of ["001_foundation.sql", "002_app_tables.sql", "003_indexes.sql", "004_mpesa_receipts.sql", "005_receipt_reference_reservations.sql", "006_fk_support_indexes.sql"]) {
+    for (const migration of ["001_foundation.sql", "002_app_tables.sql", "003_indexes.sql", "004_mpesa_receipts.sql", "005_receipt_reference_reservations.sql", "006_fk_support_indexes.sql", "007_support_and_faq.sql"]) {
       const sql = fs.readFileSync(path.join(__dirname, migration), "utf8");
       await client.query(sql);
     }

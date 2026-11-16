@@ -22,6 +22,11 @@ import CashEntryPanel from "./components/CashEntryPanel.jsx";
 import LeadershipPanel from "./components/LeadershipPanel.jsx";
 import PinChangeOverlay from "./components/PinChangeOverlay.jsx";
 import SimulatedPaymentInbox from "./components/SimulatedPaymentInbox.jsx";
+import SupportPanel from "./components/SupportPanel.jsx";
+import SupportAgentPanel from "./components/SupportAgentPanel.jsx";
+import SupportAdminPanel from "./components/SupportAdminPanel.jsx";
+import FaqPanel from "./components/FaqPanel.jsx";
+import FaqAdminPanel from "./components/FaqAdminPanel.jsx";
 
 const legacyControllerNames = new Set([
   "chama.js",
@@ -128,6 +133,21 @@ function LegacyPage({ pageKey }) {
     const simulatedPaymentHost = host.querySelector("#react-simulated-payment-root");
     const simulatedPaymentRoot = simulatedPaymentHost ? createRoot(simulatedPaymentHost) : null;
     simulatedPaymentRoot?.render(<SimulatedPaymentInbox />);
+    const faqHost = host.querySelector("#react-faq-root");
+    const faqRoot = faqHost ? createRoot(faqHost) : null;
+    faqRoot?.render(<FaqPanel />);
+    const supportHost = host.querySelector("#react-support-root");
+    const supportRoot = supportHost ? createRoot(supportHost) : null;
+    supportRoot?.render(<SupportPanel />);
+    const supportAgentHost = host.querySelector("#react-support-agent-root");
+    const supportAgentRoot = supportAgentHost ? createRoot(supportAgentHost) : null;
+    supportAgentRoot?.render(<SupportAgentPanel />);
+    const supportAdminHost = host.querySelector("#react-support-admin-root");
+    const supportAdminRoot = supportAdminHost ? createRoot(supportAdminHost) : null;
+    supportAdminRoot?.render(<SupportAdminPanel />);
+    const faqAdminHost = host.querySelector("#react-faq-admin-root");
+    const faqAdminRoot = faqAdminHost ? createRoot(faqAdminHost) : null;
+    faqAdminRoot?.render(<FaqAdminPanel />);
 
     let mounted = true;
     const loadedScripts = [];
@@ -169,6 +189,11 @@ function LegacyPage({ pageKey }) {
       leadershipRoot?.unmount();
       pinChangeRoot?.unmount();
       simulatedPaymentRoot?.unmount();
+      faqRoot?.unmount();
+      supportRoot?.unmount();
+      supportAgentRoot?.unmount();
+      supportAdminRoot?.unmount();
+      faqAdminRoot?.unmount();
       loadedScripts.forEach(script => script.remove());
       document.body.querySelectorAll('script[data-chama-react-controller="true"]').forEach(script => script.remove());
     };

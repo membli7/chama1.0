@@ -8,3 +8,5 @@ data.json.pre-setup-backup-*
 en public.code-workspace
 /frontend-dist/
 storage/push-subscriptions.json
+uploads/support/*
+!uploads/support/.gitkeep
