@@ -1,45 +1,7 @@
 {
   "version": 2,
-  "chamas": [
-    {
-      "id": "mobile-chama",
-      "name": "Mobile Test Chama",
-      "createdAt": "2026-11-07T15:43:49.347Z",
-      "subscription": {
-        "id": "468639c5-05f7-40c2-9085-b97338d0e314",
-        "status": "unpaid",
-        "tier": null,
-        "billing": null,
-        "currency": "KES",
-        "expectedAmount": null,
-        "maxMembers": null,
-        "startedAt": "2026-11-07T15:43:49.729Z",
-        "endsAt": null,
-        "reference": null,
-        "verifiedAt": null,
-        "provider": null,
-        "history": [
-          {
-            "type": "subscription.unpaid",
-            "at": "2026-11-07T15:43:49.729Z"
-          }
-        ]
-      }
-    }
-  ],
-  "users": [
-    {
-      "id": "mobile-chair",
-      "name": "Mobile Test Chair",
-      "phone": "+254711000001",
-      "email": "chair@example.test",
-      "role": "chairperson",
-      "status": "active",
-      "pinHash": "visible-mobile-test-salt:c37603e72de9770ab9ab17e79a4c0763a03c7dd430f0037197840795b9b763dc917e0fb145ad89598464af2766459c6a0677f7f5e263d0ab93d084ceba67e119",
-      "mustChangePin": false,
-      "chamaId": "mobile-chama"
-    }
-  ],
+  "chamas": [],
+  "users": [],
   "transactions": [],
   "loans": [],
   "payouts": [],
