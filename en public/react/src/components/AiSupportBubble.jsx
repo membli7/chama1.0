@@ -1,26 +1,77 @@
 import React, { useState, useEffect, useRef } from "react";
 
+const CHAT_COPY = {
+  en: {
+    welcome: "👋 **Hello! I am your Jirani Chama AI Assistant.**\n\nI can answer questions about contributions, loan limits, meeting attendance, PIN changes, and group rules. How can I assist you today?",
+    welcomeActions: ["Request a Loan", "View Ledger", "Talk to Human Support"],
+    related: ["How do I request a loan?", "How are monthly contributions recorded?", "What if I forgot my PIN?", "Talk to human support"],
+    cleared: "Conversation cleared. How can I assist you with Jirani Chama today?",
+    error: "I am having trouble answering right now. You can check our FAQs or submit a ticket directly to human support staff.",
+    trigger: "AI Support",
+    openAssistant: "Open AI Support Assistant",
+    askJirani: "Ask Jirani AI",
+    title: "Jirani AI Support",
+    subtitle: "In-App Smart Assistant",
+    clear: "Clear conversation",
+    close: "Close chat",
+    suggested: "Suggested questions:",
+    placeholder: "Ask a question about Jirani Chama...",
+    send: "Send message",
+    privacy: "In-App Assistant • 100% Private • ",
+    contact: "Contact human staff",
+    humanAction: "Talk to Human Support",
+    faqAction: "Browse FAQs"
+  },
+  sw: {
+    welcome: "👋 **Habari! Mimi ni msaidizi wako wa AI wa Jirani Chama.**\n\nNaweza kujibu maswali kuhusu michango, mipaka ya mikopo, mahudhurio ya mikutano, kubadilisha PIN na sheria za kikundi. Nikusaidie vipi leo?",
+    welcomeActions: ["Omba mkopo", "Tazama taarifa za hesabu", "Wasiliana na mhudumu wa msaada"],
+    related: ["Ninawezaje kuomba mkopo?", "Michango ya kila mwezi hurekodiwaje?", "Nifanye nini nikisahau PIN yangu?", "Wasiliana na mhudumu wa msaada"],
+    cleared: "Mazungumzo yamefutwa. Nikusaidie vipi kuhusu Jirani Chama leo?",
+    error: "Samahani, siwezi kujibu kwa sasa. Unaweza kuangalia maswali yanayoulizwa mara kwa mara au kutuma ombi kwa wahudumu wa msaada.",
+    trigger: "Msaada wa AI",
+    openAssistant: "Fungua msaidizi wa msaada wa AI",
+    askJirani: "Uliza Jirani AI",
+    title: "Msaada wa Jirani AI",
+    subtitle: "Msaidizi Mahiri wa Ndani ya Programu",
+    clear: "Futa mazungumzo",
+    close: "Funga mazungumzo",
+    suggested: "Maswali yaliyopendekezwa:",
+    placeholder: "Uliza swali kuhusu Jirani Chama...",
+    send: "Tuma ujumbe",
+    privacy: "Msaidizi wa ndani • Taarifa ni za faragha • ",
+    contact: "Wasiliana na wahudumu",
+    humanAction: "Wasiliana na mhudumu wa msaada",
+    faqAction: "Angalia maswali yanayoulizwa mara kwa mara"
+  }
+};
+
+function getAssistantLanguage() {
+  return window.jiraniI18n?.getLanguage?.() === "sw" ? "sw" : "en";
+}
+
+function createWelcomeMessage(language, id = "msg-welcome") {
+  const copy = CHAT_COPY[language];
+  const labels = copy.welcomeActions;
+  return {
+    id,
+    sender: "ai",
+    language,
+    text: copy.welcome,
+    actions: [
+      { label: labels[0], target: "#loans-panel", action: "navigate" },
+      { label: labels[1], target: "#ledger-panel", action: "navigate" },
+      { label: labels[labels.length - 1], target: "#support-panel", action: "open_ticket" }
+    ],
+    related: copy.related,
+    timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+  };
+}
+
 export default function AiSupportBubble() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      id: "msg-welcome",
-      sender: "ai",
-      text: "👋 **Hello! I am your Jirani Chama AI Assistant.**\n\nI can answer questions about contributions, loan limits, meeting attendance, PIN changes, and group rules. How can I assist you today?",
-      actions: [
-        { label: "Request a Loan", target: "#loans-panel", action: "navigate" },
-        { label: "View Ledger", target: "#ledger-panel", action: "navigate" },
-        { label: "Talk to Human Support", target: "#support-panel", action: "open_ticket" }
-      ],
-      related: [
-        "How do I request a loan?",
-        "How are monthly contributions recorded?",
-        "What if I forgot my PIN?",
-        "Talk to human support"
-      ],
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    }
-  ]);
+  const [language, setLanguage] = useState(getAssistantLanguage);
+  const copy = CHAT_COPY[language];
+  const [messages, setMessages] = useState(() => [createWelcomeMessage(getAssistantLanguage())]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -28,7 +79,8 @@ export default function AiSupportBubble() {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    fetch("/api/support/ai/suggestions")
+    const controller = new AbortController();
+    fetch(`/api/support/ai/suggestions?language=${language}`, { signal: controller.signal })
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (data?.data && Array.isArray(data.data)) {
@@ -36,6 +88,16 @@ export default function AiSupportBubble() {
         }
       })
       .catch(() => {});
+    return () => controller.abort();
+  }, [language]);
+
+  useEffect(() => {
+    const updateLanguage = event => {
+      const nextLanguage = event?.detail?.language || getAssistantLanguage();
+      setLanguage(nextLanguage === "sw" ? "sw" : "en");
+    };
+    window.addEventListener("languagechange", updateLanguage);
+    return () => window.removeEventListener("languagechange", updateLanguage);
   }, []);
 
   useEffect(() => {
@@ -78,7 +140,7 @@ export default function AiSupportBubble() {
           "X-Requested-With": "chama",
           Accept: "application/json",
         },
-        body: JSON.stringify({ message: query }),
+        body: JSON.stringify({ message: query, language }),
       });
 
       if (!res.ok) {
@@ -92,10 +154,13 @@ export default function AiSupportBubble() {
       setTimeout(() => {
         setIsTyping(false);
         setMessages(prev => [
-          ...prev,
+          ...prev.map(message => message.id === userMsg.id
+            ? { ...message, language: aiData.language || language }
+            : message),
           {
             id: `ai-${Date.now()}`,
             sender: "ai",
+            language: aiData.language || language,
             text: aiData.reply,
             actions: aiData.actions || [],
             related: aiData.related || [],
@@ -111,10 +176,11 @@ export default function AiSupportBubble() {
           {
             id: `ai-${Date.now()}`,
             sender: "ai",
-            text: "I am having trouble answering right now. You can check our FAQs or submit a ticket directly to human support staff.",
+            language,
+            text: copy.error,
             actions: [
-              { label: "Talk to Human Support", target: "#support-panel", action: "open_ticket" },
-              { label: "Browse FAQs", target: "#faq-panel", action: "navigate" }
+              { label: copy.humanAction, target: "#support-panel", action: "open_ticket" },
+              { label: copy.faqAction, target: "#faq-panel", action: "navigate" }
             ],
             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           }
@@ -126,7 +192,7 @@ export default function AiSupportBubble() {
   const handleActionClick = (act) => {
     if (act.action === "open_ticket") {
       const event = new CustomEvent("chama:open-support-ticket", {
-        detail: { category: "Other", subject: "Inquiry from AI Assistant" },
+        detail: { category: "Other", subject: language === "sw" ? "Swali kutoka kwa msaidizi wa AI" : "Inquiry from AI Assistant" },
       });
       window.dispatchEvent(event);
       window.location.hash = "#support-panel";
@@ -138,24 +204,7 @@ export default function AiSupportBubble() {
   };
 
   const handleClearChat = () => {
-    setMessages([
-      {
-        id: "msg-welcome-new",
-        sender: "ai",
-        text: "Conversation cleared. How can I assist you with Jirani Chama today?",
-        actions: [
-          { label: "Request a Loan", target: "#loans-panel", action: "navigate" },
-          { label: "Talk to Human Support", target: "#support-panel", action: "open_ticket" }
-        ],
-        related: [
-          "How do I request a loan?",
-          "How are monthly contributions recorded?",
-          "What if I forgot my PIN?",
-          "Talk to human support"
-        ],
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      }
-    ]);
+    setMessages([{ ...createWelcomeMessage(language, "msg-welcome-new"), text: copy.cleared }]);
   };
 
   // Simple formatting helper for markdown-style bold, bullet points, headers
@@ -200,7 +249,7 @@ export default function AiSupportBubble() {
   };
 
   return (
-    <div className="ai-bubble-container" aria-label="Jirani AI Assistant">
+    <div className="ai-bubble-container" aria-label={copy.title} lang={language} translate="no">
       {/* Floating Trigger Button */}
       {!isOpen && (
         <button
@@ -208,8 +257,8 @@ export default function AiSupportBubble() {
           className="ai-bubble-trigger-btn"
           onClick={() => setIsOpen(true)}
           aria-expanded={false}
-          aria-label="Open AI Support Assistant"
-          title="Ask Jirani AI"
+          aria-label={copy.openAssistant}
+          title={copy.askJirani}
         >
           <div className="ai-bubble-trigger-icon">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -218,14 +267,14 @@ export default function AiSupportBubble() {
               <circle cx="15" cy="10" r="1" fill="currentColor" />
             </svg>
           </div>
-          <span className="ai-bubble-trigger-label">AI Support</span>
+          <span className="ai-bubble-trigger-label">{copy.trigger}</span>
           <span className="ai-bubble-pulse-dot" />
         </button>
       )}
 
       {/* Floating Chat Window */}
       {isOpen && (
-        <div className="ai-bubble-window" role="dialog" aria-modal="true" aria-label="AI Support Chat">
+        <div className="ai-bubble-window" role="dialog" aria-modal="true" aria-label={copy.title}>
           {/* Header */}
           <div className="ai-bubble-header">
             <div className="ai-bubble-header-info">
@@ -240,15 +289,16 @@ export default function AiSupportBubble() {
                 <span className="ai-online-status" />
               </div>
               <div>
-                <h3 className="ai-bubble-title">Jirani AI Support</h3>
-                <span className="ai-bubble-subtitle">In-App Smart Assistant</span>
+                <h3 className="ai-bubble-title">{copy.title}</h3>
+                <span className="ai-bubble-subtitle">{copy.subtitle}</span>
               </div>
             </div>
             <div className="ai-bubble-header-actions">
               <button
                 type="button"
                 className="ai-bubble-icon-btn"
-                title="Clear conversation"
+                title={copy.clear}
+                aria-label={copy.clear}
                 onClick={handleClearChat}
               >
                 🗑️
@@ -256,7 +306,8 @@ export default function AiSupportBubble() {
               <button
                 type="button"
                 className="ai-bubble-icon-btn"
-                title="Close chat"
+                title={copy.close}
+                aria-label={copy.close}
                 onClick={() => setIsOpen(false)}
               >
                 ✕
@@ -277,7 +328,7 @@ export default function AiSupportBubble() {
                   </div>
                 )}
                 <div className={`ai-bubble-msg-bubble ${msg.sender === "user" ? "user-bubble" : "ai-bubble"}`}>
-                  <div className="ai-bubble-msg-content">
+                  <div className="ai-bubble-msg-content" lang={msg.language || (msg.sender === "user" ? undefined : language)} dir="auto">
                     {msg.sender === "user" ? msg.text : renderFormattedText(msg.text)}
                   </div>
 
@@ -300,7 +351,7 @@ export default function AiSupportBubble() {
                   {/* Related follow-up suggestions */}
                   {msg.related && msg.related.length > 0 && (
                     <div className="ai-bubble-related-group">
-                      <span className="ai-bubble-related-title">Suggested questions:</span>
+                      <span className="ai-bubble-related-title">{copy.suggested}</span>
                       <div className="ai-bubble-related-chips">
                         {msg.related.map((q, qIdx) => (
                           <button
@@ -362,7 +413,7 @@ export default function AiSupportBubble() {
             <input
               ref={inputRef}
               type="text"
-              placeholder="Ask a question about Jirani Chama..."
+              placeholder={copy.placeholder}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               className="ai-bubble-input"
@@ -371,7 +422,8 @@ export default function AiSupportBubble() {
               type="submit"
               disabled={!inputValue.trim() || isTyping}
               className="ai-bubble-send-btn"
-              title="Send message"
+              title={copy.send}
+              aria-label={copy.send}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13" />
@@ -382,7 +434,7 @@ export default function AiSupportBubble() {
 
           {/* Privacy & Escalate Note */}
           <div className="ai-bubble-disclaimer">
-            <span>In-App Assistant • 100% Private • </span>
+            <span>{copy.privacy}</span>
             <button
               type="button"
               className="ai-bubble-link-btn"
@@ -390,7 +442,7 @@ export default function AiSupportBubble() {
                 handleActionClick({ action: "open_ticket" });
               }}
             >
-              Contact human staff
+              {copy.contact}
             </button>
           </div>
         </div>

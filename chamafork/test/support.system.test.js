@@ -503,6 +503,28 @@ test("In-App AI Support Bubble (100% In-House, No External API)", async (t) => {
     assert.equal(body.data.some(s => s.toLowerCase().includes("loan")), true);
   });
 
+  await t.test("1a. Returns Kiswahili starter suggestions when the interface is in Kiswahili", async () => {
+    const res = await req("/api/support/ai/suggestions?language=sw");
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.data.some(s => s.includes("mkopo")), true);
+    assert.equal(body.data.some(s => s.includes("Michango")), true);
+  });
+
+  await t.test("1b. Guides users who ask in either language to join an existing Chama", async () => {
+    for (const [message, expectedLanguage] of [
+      ["Nataka kujiunga na chama kwa msimbo wa mwaliko", "sw"],
+      ["How do I join an existing Chama with an activation code?", "en"],
+    ]) {
+      const res = await req("/api/support/ai/chat", { method: "POST", body: { message } });
+      assert.equal(res.status, 200);
+      const body = await res.json();
+      assert.equal(body.data.language, expectedLanguage);
+      assert.match(body.data.reply, expectedLanguage === "sw" ? /Kujiunga na chama kilichopo/ : /To join an existing Chama/);
+      assert.equal(body.data.actions.some(action => action.target === "#login"), true);
+    }
+  });
+
   await t.test("2. Answers loan inquiries with 3x shares rule and guarantors requirement", async () => {
     const res = await req("/api/support/ai/chat", {
       method: "POST",
@@ -516,6 +538,20 @@ test("In-App AI Support Bubble (100% In-House, No External API)", async (t) => {
     assert.equal(body.data.reply.includes("guarantors"), true);
     assert.ok(Array.isArray(body.data.actions));
     assert.equal(body.data.actions.some(a => a.target === "#loans-panel"), true);
+  });
+
+  await t.test("2a. Understands a Kiswahili loan question and replies in Kiswahili", async () => {
+    const res = await req("/api/support/ai/chat", {
+      method: "POST",
+      cookie: memberCookie,
+      body: { message: "Ninawezaje kuomba mkopo na ninahitaji wadhamini wangapi?" },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.data.language, "sw");
+    assert.match(body.data.reply, /mara 3 ya mtaji/i);
+    assert.match(body.data.reply, /wanachama hai 2/i);
+    assert.equal(body.data.actions.some(a => a.label === "Omba mkopo"), true);
   });
 
   await t.test("3. Answers contribution and welfare inquiries with deadline and penalty info", async () => {
@@ -532,6 +568,20 @@ test("In-App AI Support Bubble (100% In-House, No External API)", async (t) => {
     assert.equal(body.data.actions.some(a => a.target === "#ledger-panel"), true);
   });
 
+  await t.test("3a. Understands Kiswahili contribution and late-fine questions", async () => {
+    const res = await req("/api/support/ai/chat", {
+      method: "POST",
+      cookie: memberCookie,
+      body: { message: "Mchango wa kila mwezi hulipwa lini na faini ya kuchelewa ni kiasi gani?" },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.data.language, "sw");
+    assert.match(body.data.reply, /Michango ya Kila Mwezi/);
+    assert.match(body.data.reply, /faini/i);
+    assert.match(body.data.reply, /KES \d+/);
+  });
+
   await t.test("4. Answers PIN recovery inquiries with 6-12 digit rule", async () => {
     const res = await req("/api/support/ai/chat", {
       method: "POST",
@@ -542,6 +592,18 @@ test("In-App AI Support Bubble (100% In-House, No External API)", async (t) => {
     assert.ok(body.data.reply);
     assert.equal(body.data.reply.includes("6 to 12 digit"), true);
     assert.equal(body.data.reply.includes("Forgot PIN?"), true);
+  });
+
+  await t.test("4a. Answers Kiswahili PIN recovery questions in Kiswahili", async () => {
+    const res = await req("/api/support/ai/chat", {
+      method: "POST",
+      body: { message: "Nimesahau namba yangu ya siri, nifanye nini?" },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.data.language, "sw");
+    assert.match(body.data.reply, /tarakimu \*\*6 hadi 12\*\*/i);
+    assert.match(body.data.reply, /Umesahau PIN/i);
   });
 
   await t.test("5. Escalates directly to human support ticket on request", async () => {
@@ -555,6 +617,30 @@ test("In-App AI Support Bubble (100% In-House, No External API)", async (t) => {
     assert.ok(body.data.reply);
     assert.equal(body.data.reply.toLowerCase().includes("human"), true);
     assert.equal(body.data.actions.some(a => a.action === "open_ticket"), true);
+  });
+
+  await t.test("5a. Escalates Kiswahili requests to a human support ticket", async () => {
+    const res = await req("/api/support/ai/chat", {
+      method: "POST",
+      cookie: memberCookie,
+      body: { message: "Naomba kuzungumza na mhudumu wa msaada" },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.data.language, "sw");
+    assert.match(body.data.reply, /Wasiliana na Mhudumu wa Msaada/);
+    assert.equal(body.data.actions.some(a => a.action === "open_ticket"), true);
+  });
+
+  await t.test("5b. Uses the language of an English question even when the interface preference is Kiswahili", async () => {
+    const res = await req("/api/support/ai/chat", {
+      method: "POST",
+      body: { message: "How do I reset my PIN?", language: "sw" },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.data.language, "en");
+    assert.match(body.data.reply, /6 to 12 digit/);
   });
 
   await t.test("6. Validates empty input and excessive length", async () => {

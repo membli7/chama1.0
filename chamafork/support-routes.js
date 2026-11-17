@@ -10,6 +10,7 @@ const {
   VALID_CATEGORIES,
   DEFAULT_FAQS,
   STARTER_SUGGESTIONS,
+  SWAHILI_STARTER_SUGGESTIONS,
   isStaffUser,
   isPlatformAdmin,
   isChamaAdmin,
@@ -1373,7 +1374,8 @@ function registerSupportRoutes(app, deps) {
 
   // Get starter suggestions for the AI chat bubble
   app.get("/api/support/ai/suggestions", (req, res) => {
-    return res.json({ data: STARTER_SUGGESTIONS });
+    const language = String(req.query?.language || "").toLowerCase();
+    return res.json({ data: language.startsWith("sw") ? SWAHILI_STARTER_SUGGESTIONS : STARTER_SUGGESTIONS });
   });
 
   // Chat with the in-app AI assistant (No external LLM/Gemini API calls)
@@ -1388,6 +1390,7 @@ function registerSupportRoutes(app, deps) {
     const context = {
       user: req.user ? { id: req.user.id, name: req.user.name, role: req.user.role, chamaId: req.user.chamaId } : null,
       settings: state.settings || {},
+      language: req.body?.language,
     };
 
     const aiResponse = processAiChat(message, context, state);
