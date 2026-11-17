@@ -1387,9 +1387,16 @@ function registerSupportRoutes(app, deps) {
       return res.status(400).json({ message: "Please provide a valid question under 2000 characters." });
     }
 
+    const userChama = req.user?.chamaId
+      ? state.chamas?.find(chama => chama.id === req.user.chamaId)
+      : null;
+    const loanPolicyEvent = req.user?.chamaId && Array.isArray(state.auditLog)
+      ? state.auditLog.slice().reverse().find(event => event.type === "loan.policy.updated" && event.chamaId === req.user.chamaId && event.policy)
+      : null;
     const context = {
       user: req.user ? { id: req.user.id, name: req.user.name, role: req.user.role, chamaId: req.user.chamaId } : null,
-      settings: state.settings || {},
+      settings: userChama?.settings || {},
+      loanPolicy: loanPolicyEvent?.policy || null,
       language: req.body?.language,
     };
 

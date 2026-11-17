@@ -27,8 +27,8 @@ function pinHash(pin) {
   return `${salt}:${crypto.scryptSync(pin, salt, 64).toString("hex")}`;
 }
 
-const chama1 = { id: "chama-1", name: "Alpha Chama", subscription: require("./active-subscription-fixture").activeSubscription() };
-const chama2 = { id: "chama-2", name: "Beta Chama", subscription: require("./active-subscription-fixture").activeSubscription() };
+const chama1 = { id: "chama-1", name: "Alpha Chama", settings: { defaultDeadlineDay: 10, welfareMonthlyFee: 650, lateContributionPenalty: 250, loanMonthlyRatePercent: 7 }, subscription: require("./active-subscription-fixture").activeSubscription() };
+const chama2 = { id: "chama-2", name: "Beta Chama", settings: { defaultDeadlineDay: 20, welfareMonthlyFee: 900, lateContributionPenalty: 350, loanMonthlyRatePercent: 9 }, subscription: require("./active-subscription-fixture").activeSubscription() };
 
 const memberUser = { id: "user-member-1", name: "Alice Member", phone: "+254711100001", role: "member", status: "active", chamaId: "chama-1", pinHash: pinHash("123456"), mustChangePin: false, createdAt: "2026-09-01T08:00:00.000Z" };
 const otherMemberUser = { id: "user-member-2", name: "Bob Member", phone: "+254711100002", role: "member", status: "active", chamaId: "chama-1", pinHash: pinHash("234567"), mustChangePin: false, createdAt: "2026-09-01T08:00:00.000Z" };
@@ -525,7 +525,7 @@ test("In-App AI Support Bubble (100% In-House, No External API)", async (t) => {
     }
   });
 
-  await t.test("2. Answers loan inquiries with 3x shares rule and guarantors requirement", async () => {
+  await t.test("2. Answers loan inquiries with configured policy and guarantor requirements", async () => {
     const res = await req("/api/support/ai/chat", {
       method: "POST",
       cookie: memberCookie,
@@ -534,8 +534,9 @@ test("In-App AI Support Bubble (100% In-House, No External API)", async (t) => {
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.ok(body.data.reply);
-    assert.equal(body.data.reply.includes("3 times your share capital"), true);
+    assert.match(body.data.reply, /no universal eligibility threshold/i);
     assert.equal(body.data.reply.includes("guarantors"), true);
+    assert.match(body.data.reply, /7%/);
     assert.ok(Array.isArray(body.data.actions));
     assert.equal(body.data.actions.some(a => a.target === "#loans-panel"), true);
   });
@@ -549,9 +550,21 @@ test("In-App AI Support Bubble (100% In-House, No External API)", async (t) => {
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.equal(body.data.language, "sw");
-    assert.match(body.data.reply, /mara 3 ya mtaji/i);
-    assert.match(body.data.reply, /wanachama hai 2/i);
+    assert.match(body.data.reply, /Hakuna kigezo cha jumla/i);
+    assert.match(body.data.reply, /wanachama hai wawili tofauti/i);
     assert.equal(body.data.actions.some(a => a.label === "Omba mkopo"), true);
+  });
+
+  await t.test("2b. Uses the signed-in user's own Chama loan rate", async () => {
+    const res = await req("/api/support/ai/chat", {
+      method: "POST",
+      cookie: otherChamaCookie,
+      body: { message: "What is my loan interest rate?" },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.match(body.data.reply, /9%/);
+    assert.doesNotMatch(body.data.reply, /7%/);
   });
 
   await t.test("3. Answers contribution and welfare inquiries with deadline and penalty info", async () => {
@@ -565,6 +578,8 @@ test("In-App AI Support Bubble (100% In-House, No External API)", async (t) => {
     assert.ok(body.data.reply);
     assert.equal(body.data.reply.toLowerCase().includes("welfare"), true);
     assert.equal(body.data.reply.toLowerCase().includes("penalty"), true);
+    assert.match(body.data.reply, /KES 650/);
+    assert.match(body.data.reply, /KES 250/);
     assert.equal(body.data.actions.some(a => a.target === "#ledger-panel"), true);
   });
 
@@ -577,9 +592,21 @@ test("In-App AI Support Bubble (100% In-House, No External API)", async (t) => {
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.equal(body.data.language, "sw");
-    assert.match(body.data.reply, /Michango ya Kila Mwezi/);
+    assert.match(body.data.reply, /Michango na faini zilizorekodiwa/);
     assert.match(body.data.reply, /faini/i);
-    assert.match(body.data.reply, /KES \d+/);
+    assert.match(body.data.reply, /KES 250/);
+  });
+
+  await t.test("3b. Does not invent contribution values without an authenticated Chama", async () => {
+    const res = await req("/api/support/ai/chat", {
+      method: "POST",
+      body: { message: "What is the monthly contribution and late fine?" },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.match(body.data.reply, /date configured by your Chama/i);
+    assert.match(body.data.reply, /amount configured by your Chama/i);
+    assert.doesNotMatch(body.data.reply, /KES \d+/);
   });
 
   await t.test("4. Answers PIN recovery inquiries with 6-12 digit rule", async () => {
@@ -590,7 +617,7 @@ test("In-App AI Support Bubble (100% In-House, No External API)", async (t) => {
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.ok(body.data.reply);
-    assert.equal(body.data.reply.includes("6 to 12 digit"), true);
+    assert.match(body.data.reply, /6[–-]12 digit/i);
     assert.equal(body.data.reply.includes("Forgot PIN?"), true);
   });
 
@@ -602,8 +629,8 @@ test("In-App AI Support Bubble (100% In-House, No External API)", async (t) => {
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.equal(body.data.language, "sw");
-    assert.match(body.data.reply, /tarakimu \*\*6 hadi 12\*\*/i);
-    assert.match(body.data.reply, /Umesahau PIN/i);
+    assert.match(body.data.reply, /tarakimu \*\*6[–-]12\*\*/i);
+    assert.match(body.data.reply, /Ukisahau PIN/i);
   });
 
   await t.test("5. Escalates directly to human support ticket on request", async () => {
@@ -628,7 +655,7 @@ test("In-App AI Support Bubble (100% In-House, No External API)", async (t) => {
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.equal(body.data.language, "sw");
-    assert.match(body.data.reply, /Wasiliana na Mhudumu wa Msaada/);
+    assert.match(body.data.reply, /Wasilisha ombi la msaada/);
     assert.equal(body.data.actions.some(a => a.action === "open_ticket"), true);
   });
 
@@ -640,7 +667,7 @@ test("In-App AI Support Bubble (100% In-House, No External API)", async (t) => {
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.equal(body.data.language, "en");
-    assert.match(body.data.reply, /6 to 12 digit/);
+    assert.match(body.data.reply, /6[–-]12 digit/i);
   });
 
   await t.test("6. Validates empty input and excessive length", async () => {
