@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "test": "node --test",
+    "test": "node --require ./chamafork/test/test-env.js --test",
 
     "build": "node --check chamafork/server.js",
     "start": "node chamafork/server.js"

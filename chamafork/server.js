@@ -38,6 +38,17 @@ if (process.env.NODE_ENV === "test") {
 } else {
   loadAppEnv();
 }
+
+function requireEnvironmentSecret(name) {
+  const value = process.env[name];
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`${name} must be set in the process environment.`);
+  }
+  return value;
+}
+const SESSION_SECRET = requireEnvironmentSecret("SESSION_SECRET");
+const oneTimeCodeSecret = requireEnvironmentSecret("ONE_TIME_CODE_HMAC_SECRET");
+const metricsBearerToken = requireEnvironmentSecret("METRICS_BEARER_TOKEN");
 const {
   logger,
   latencyMiddleware,
@@ -158,12 +169,10 @@ const SUBSCRIPTION_PAYMENTS_PAUSED_MESSAGE = "Online subscription payments are t
 const monthDateFormatter = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", timeZone: "Africa/Nairobi" });
 const eventClients = new Set();
 let leadershipElectionTimer = null;
-const SESSION_SECRET = process.env.SESSION_SECRET;
 const sessionBackend = createSessionBackend(TEST_SESSION_REDIS_URL
   ? { redisUrl: TEST_SESSION_REDIS_URL, sessionStore: "redis" }
   : undefined);
 validateProductionConfig(process.env);
-const oneTimeCodeSecret = process.env.ONE_TIME_CODE_HMAC_SECRET || (process.env.NODE_ENV === "test" ? "test-only-one-time-code-hmac-key-0123456789" : "");
 if (Buffer.byteLength(oneTimeCodeSecret, "utf8") < 32) throw new Error("ONE_TIME_CODE_HMAC_SECRET must be set to a dedicated value of at least 32 bytes.");
 if (oneTimeCodeSecret === SESSION_SECRET) throw new Error("ONE_TIME_CODE_HMAC_SECRET must be different from SESSION_SECRET.");
 const { hashCode, verifyCodeHash } = createOneTimeCodeVerifier(oneTimeCodeSecret);
@@ -176,7 +185,6 @@ const loginFailures = new Map();
 const idempotencyRequests = new Map();
 const writeQueue = createWriteQueue();
 
-if (!SESSION_SECRET) throw new Error("SESSION_SECRET must be set in .env.");
 
 function clean(value) { return String(value ?? "").trim(); }
 function hasAcceptedTerms(value) { return value === true || value === "true"; }
@@ -1334,7 +1342,7 @@ app.use((req, res, next) => {
 // Restrict to localhost in production via nginx or a firewall rule.
 function metricsAuthorized(req) {
   if (process.env.NODE_ENV !== "production" && process.env.FORCE_METRICS_AUTH !== "1") return true;
-  const expected = Buffer.from(process.env.METRICS_BEARER_TOKEN || "");
+  const expected = Buffer.from(metricsBearerToken);
   const supplied = Buffer.from((req.get("Authorization") || "").replace(/^Bearer\s+/i, ""));
   return expected.length >= 32 && supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
 }

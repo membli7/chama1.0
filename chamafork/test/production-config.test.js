@@ -1,6 +1,7 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const { spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 const { test } = require("node:test");
@@ -46,6 +47,29 @@ test("production startup requires secure origins, strong secrets, PostgreSQL, Re
   assert.throws(() => validateProductionConfig({ ...good, SMTP_TRANSPORT: "json" }), /SMTP_TRANSPORT=json is prohibited in production/);
   assert.throws(() => validateProductionConfig({ ...good, SMTP_LOG_FILE: "mail.jsonl" }), /SMTP_LOG_FILE is prohibited in production/);
   assert.throws(() => validateProductionConfig({ ...good, REDIS_URL: "redis://redis.example.test" }), /Unsafe production configuration/);
+});
+
+test("server startup requires each security secret from the process environment", () => {
+  for (const key of ["SESSION_SECRET", "ONE_TIME_CODE_HMAC_SECRET", "METRICS_BEARER_TOKEN"]) {
+    const env = {
+      ...process.env,
+      NODE_ENV: "test",
+      DATA_BACKEND: "json",
+      PORT: "0",
+      APP_BIND_HOST: "127.0.0.1",
+    };
+    delete env[key];
+    delete env.NODE_OPTIONS;
+    const result = spawnSync(process.execPath, ["server.js"], {
+      cwd: path.join(__dirname, ".."),
+      env,
+      encoding: "utf8",
+      timeout: 5000,
+    });
+    assert.equal(result.error, undefined, `${key} should fail during startup without hanging`);
+    assert.notEqual(result.status, 0, `${key} must be required`);
+    assert.match(result.stderr, new RegExp(`${key} must be set in the process environment\\.`));
+  }
 });
 
 test("origin parsing rejects paths and non-HTTPS origins", () => {
