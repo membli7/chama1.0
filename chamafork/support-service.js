@@ -372,7 +372,7 @@ function processAiChat(rawMessage, context = {}, state = {}) {
   const user = context.user || null;
   const localized = (english, swahili) => language === 'sw' ? swahili : english;
 
-  const reply = (text, actions = [], related = []) => ({
+  const reply = (text, actions = [], related = [], metadata = {}) => ({
     reply: text,
     language,
     actions: language === 'sw'
@@ -384,7 +384,9 @@ function processAiChat(rawMessage, context = {}, state = {}) {
       'What if I forgot my PIN?',
       'Talk to human support'
     ]).map(question => language === 'sw' ? SWAHILI_RELATED_QUESTIONS[question] || question : question),
+    followUp: message ? localized("Would you like help with anything else?", "Je, kuna jambo lingine unalohitaji msaada nalo?") : "",
     timestamp: new Date().toISOString(),
+    ...metadata,
   });
 
   if (!message) return reply(knowledgeAnswer('welcome', language, settings));
@@ -499,7 +501,7 @@ function processAiChat(rawMessage, context = {}, state = {}) {
   return reply(knowledgeAnswer('unknown', language, settings), [
     { label: 'Submit Support Ticket', target: '#support-panel', action: 'open_ticket' },
     { label: 'Browse FAQs', target: '#faq-panel', action: 'navigate' }
-  ]);
+  ], [], { unanswered: true, unansweredQuestion: message });
 }
 
 module.exports = {

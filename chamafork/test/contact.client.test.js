@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
+const { pathToFileURL } = require("node:url");
 const { test } = require("node:test");
 
 const clientPath = path.join(__dirname, "..", "..", "en public", "contact.js");
@@ -56,6 +57,31 @@ async function submitWithResponse(status, ok = status < 400) {
   await submitHandler({ preventDefault() {} });
   return { feedback, buttonLabel, submitButton, resetCount };
 }
+
+test("AI unanswered-question submissions include the user's email and original question", async () => {
+  const actionsPath = path.join(__dirname, "..", "..", "en public", "react", "src", "contactActions.mjs");
+  const { submitUnansweredSupportQuestion } = await import(pathToFileURL(actionsPath).href);
+  const expectedResponse = { ok: true, status: 200 };
+  let request;
+
+  const response = await submitUnansweredSupportQuestion({
+    email: "  member@example.test ",
+    question: "How do I challenge a disputed audit entry?",
+  }, async (url, options) => {
+    request = { url, options };
+    return expectedResponse;
+  });
+
+  assert.equal(response, expectedResponse);
+  assert.equal(request.url, "/api/contact");
+  assert.equal(request.options.credentials, "same-origin");
+  assert.deepEqual(JSON.parse(request.options.body), {
+    name: "Jirani Chama AI Assistant",
+    email: "member@example.test",
+    subject: "Unanswered question from Jirani Chama AI Assistant",
+    message: "Question asked in the AI support chat:\n\nHow do I challenge a disputed audit entry?",
+  });
+});
 
 test("contact client reports all server errors as delivery failures, never validation or success", async () => {
   const unavailable = "Email delivery is temporarily unavailable. Please try again later or email us directly.";

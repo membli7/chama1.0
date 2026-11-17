@@ -57,6 +57,15 @@ test("does not answer an unrelated personal-balance question with a loosely matc
   assert.doesNotMatch(response.reply, /A loan FAQ answer/);
 });
 
+test("offers email follow-up with the original query when the assistant has no reliable answer", () => {
+  const question = "How do I challenge a disputed audit entry?";
+  const response = processAiChat(question);
+
+  assert.equal(response.unanswered, true);
+  assert.equal(response.unansweredQuestion, question);
+  assert.equal(response.followUp, "Would you like help with anything else?");
+});
+
 const bilingualExamples = [
   ["Kiswahili greeting", "Habari, naomba msaada", "sw", /Karibu kwenye msaada/i],
   ["English Chama registration", "Can I register a new Chama?", "en", /Register a New Chama/],
@@ -74,6 +83,9 @@ for (const [scenario, message, language, expectedText] of bilingualExamples) {
 
     assert.equal(response.language, language);
     assert.match(response.reply, expectedText);
+    assert.equal(response.followUp, language === "sw"
+      ? "Je, kuna jambo lingine unalohitaji msaada nalo?"
+      : "Would you like help with anything else?");
   });
 }
 

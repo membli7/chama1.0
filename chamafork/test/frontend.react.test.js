@@ -55,6 +55,23 @@ test("the AI support bubble ships with fixed floating styles on every React page
   }
 });
 
+test("the AI assistant asks whether more help is needed and offers a bilingual email fallback", () => {
+  const bubble = readSource("src/components/AiSupportBubble.jsx");
+  const contactActions = readSource("src/contactActions.mjs");
+  const supportStyles = fs.readFileSync(path.join(sourceRoot, "..", "support.css"), "utf8");
+
+  assert.match(bubble, /msg\.followUp && <p className="ai-bubble-follow-up">/);
+  assert.match(bubble, /msg\.unanswered &&/);
+  assert.match(bubble, /unansweredIntro: "Leave your email/);
+  assert.match(bubble, /unansweredIntro: "Acha anwani yako/);
+  assert.match(bubble, /type="email"/);
+  assert.match(bubble, /value=\{formState\.question\}/);
+  assert.match(bubble, /role="status" aria-live="polite"/);
+  assert.match(bubble, /formState\.status === "submitted"/);
+  assert.match(contactActions, /fetcher\("\/api\/contact"/);
+  assert.match(supportStyles, /\.ai-bubble-msg-bubble\.ai-bubble-has-unanswered-form/);
+});
+
 test("the dashboard exposes an accessible bilingual Help & Guide for core chama tasks", () => {
   const dashboard = fs.readFileSync(path.join(sourceRoot, "..", "index.html"), "utf8");
   const localeSource = fs.readFileSync(path.join(sourceRoot, "..", "i18n.js"), "utf8");

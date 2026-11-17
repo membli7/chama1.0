@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { submitUnansweredSupportQuestion } from "../contactActions.mjs";
 
 const CHAT_COPY = {
   en: {
@@ -7,6 +8,17 @@ const CHAT_COPY = {
     related: ["How do I request a loan?", "How are monthly contributions recorded?", "What if I forgot my PIN?", "Talk to human support"],
     cleared: "Conversation cleared. How can I assist you with Jirani Chama today?",
     error: "I am having trouble answering right now. You can check our FAQs or submit a ticket directly to human support staff.",
+    unansweredIntro: "Leave your email so the support team can follow up. You can edit your question before sending.",
+    emailLabel: "Your email",
+    questionLabel: "Your question",
+    formLabel: "Send an unanswered question to support",
+    submitQuestion: "Send to support",
+    sendingQuestion: "Sending…",
+    submitted: "Submitted — your question and email have been sent to support.",
+    submitError: "We couldn’t send that just now. Please try again.",
+    rateLimitError: "Too many messages were sent. Please try again later.",
+    requiredFields: "Please enter your email and question.",
+    contactDisclosure: "Submitting shares your email and question with the support team. They can reply to this address.",
     trigger: "AI Support",
     openAssistant: "Open AI Support Assistant",
     askJirani: "Ask Jirani AI",
@@ -17,7 +29,7 @@ const CHAT_COPY = {
     suggested: "Suggested questions:",
     placeholder: "Ask a question about Jirani Chama...",
     send: "Send message",
-    privacy: "In-App Assistant • 100% Private • ",
+    privacy: "AI Support • Email is sent only when you submit an unanswered question • ",
     contact: "Contact human staff",
     humanAction: "Talk to Human Support",
     faqAction: "Browse FAQs"
@@ -28,6 +40,17 @@ const CHAT_COPY = {
     related: ["Ninawezaje kuomba mkopo?", "Michango ya kila mwezi hurekodiwaje?", "Nifanye nini nikisahau PIN yangu?", "Wasiliana na mhudumu wa msaada"],
     cleared: "Mazungumzo yamefutwa. Nikusaidie vipi kuhusu Jirani Chama leo?",
     error: "Samahani, siwezi kujibu kwa sasa. Unaweza kuangalia maswali yanayoulizwa mara kwa mara au kutuma ombi kwa wahudumu wa msaada.",
+    unansweredIntro: "Acha anwani yako ya barua pepe ili timu ya msaada iweze kukujibu. Unaweza kuhariri swali kabla ya kulituma.",
+    emailLabel: "Barua pepe yako",
+    questionLabel: "Swali lako",
+    formLabel: "Tuma swali lisilojibiwa kwa timu ya msaada",
+    submitQuestion: "Tuma kwa timu ya msaada",
+    sendingQuestion: "Inatuma…",
+    submitted: "Imetumwa — swali na barua pepe yako vimetumwa kwa timu ya msaada.",
+    submitError: "Hatukuweza kutuma sasa hivi. Tafadhali jaribu tena.",
+    rateLimitError: "Umetuma ujumbe mwingi. Tafadhali jaribu tena baadaye.",
+    requiredFields: "Tafadhali weka barua pepe yako na swali.",
+    contactDisclosure: "Ukituma, anwani yako ya barua pepe na swali zitatumwa kwa timu ya msaada. Wanaweza kukujibu kupitia anwani hii.",
     trigger: "Msaada wa AI",
     openAssistant: "Fungua msaidizi wa msaada wa AI",
     askJirani: "Uliza Jirani AI",
@@ -38,7 +61,7 @@ const CHAT_COPY = {
     suggested: "Maswali yaliyopendekezwa:",
     placeholder: "Uliza swali kuhusu Jirani Chama...",
     send: "Tuma ujumbe",
-    privacy: "Msaidizi wa ndani • Taarifa ni za faragha • ",
+    privacy: "Msaada wa AI • Barua pepe hutumwa tu unapotuma swali lisilojibiwa • ",
     contact: "Wasiliana na wahudumu",
     humanAction: "Wasiliana na mhudumu wa msaada",
     faqAction: "Angalia maswali yanayoulizwa mara kwa mara"
@@ -75,8 +98,11 @@ export default function AiSupportBubble() {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
+  const [unansweredForms, setUnansweredForms] = useState({});
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const unansweredErrorRefs = useRef({});
+  const errorFocusTarget = useRef(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -112,6 +138,14 @@ export default function AiSupportBubble() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
+
+  useEffect(() => {
+    const messageId = errorFocusTarget.current;
+    if (messageId && unansweredErrorRefs.current[messageId]) {
+      unansweredErrorRefs.current[messageId].focus();
+      errorFocusTarget.current = null;
+    }
+  }, [unansweredForms]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -162,6 +196,9 @@ export default function AiSupportBubble() {
             sender: "ai",
             language: aiData.language || language,
             text: aiData.reply,
+            followUp: aiData.followUp || "",
+            unanswered: aiData.unanswered === true,
+            unansweredQuestion: aiData.unansweredQuestion || query,
             actions: aiData.actions || [],
             related: aiData.related || [],
             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -186,6 +223,75 @@ export default function AiSupportBubble() {
           }
         ]);
       }, 350);
+    }
+  };
+
+  const updateUnansweredForm = (messageId, originalQuestion, field, value) => {
+    setUnansweredForms(previous => {
+      const current = previous[messageId] || {
+        email: "",
+        question: originalQuestion || "",
+        status: "idle",
+        error: "",
+      };
+      return { ...previous, [messageId]: { ...current, [field]: value, error: "" } };
+    });
+  };
+
+  const handleUnansweredSubmit = async (event, messageId, originalQuestion) => {
+    event.preventDefault();
+    const current = unansweredForms[messageId] || {
+      email: "",
+      question: originalQuestion || "",
+      status: "idle",
+      error: "",
+    };
+    if (current.status === "sending" || current.status === "submitted") return;
+
+    const submission = {
+      ...current,
+      email: String(current.email || "").trim(),
+      question: String(current.question || "").trim(),
+    };
+    if (!submission.email || !submission.question) {
+      errorFocusTarget.current = messageId;
+      setUnansweredForms(previous => ({
+        ...previous,
+        [messageId]: { ...submission, status: "idle", error: copy.requiredFields },
+      }));
+      return;
+    }
+
+    setUnansweredForms(previous => ({
+      ...previous,
+      [messageId]: { ...submission, status: "sending", error: "" },
+    }));
+
+    try {
+      const response = await submitUnansweredSupportQuestion(submission);
+      if (!response.ok) {
+        errorFocusTarget.current = messageId;
+        setUnansweredForms(previous => ({
+          ...previous,
+          [messageId]: {
+            ...submission,
+            status: "idle",
+            error: response.status === 429 ? copy.rateLimitError : copy.submitError,
+          },
+        }));
+        return;
+      }
+
+      setUnansweredForms(previous => ({
+        ...previous,
+        [messageId]: { email: "", question: "", status: "submitted", error: "" },
+      }));
+    } catch {
+      errorFocusTarget.current = messageId;
+      setUnansweredForms(previous => ({
+        ...previous,
+        [messageId]: { ...submission, status: "idle", error: copy.submitError },
+      }));
     }
   };
 
@@ -317,7 +423,16 @@ export default function AiSupportBubble() {
 
           {/* Messages Body */}
           <div className="ai-bubble-messages">
-            {messages.map(msg => (
+            {messages.map(msg => {
+              const formState = msg.unanswered
+                ? unansweredForms[msg.id] || {
+                    email: "",
+                    question: msg.unansweredQuestion || "",
+                    status: "idle",
+                    error: "",
+                  }
+                : null;
+              return (
               <div
                 key={msg.id}
                 className={`ai-bubble-msg-row ${msg.sender === "user" ? "user-row" : "ai-row"}`}
@@ -327,10 +442,79 @@ export default function AiSupportBubble() {
                     🤖
                   </div>
                 )}
-                <div className={`ai-bubble-msg-bubble ${msg.sender === "user" ? "user-bubble" : "ai-bubble"}`}>
+                <div className={`ai-bubble-msg-bubble ${msg.sender === "user" ? "user-bubble" : "ai-bubble"}${msg.unanswered ? " ai-bubble-has-unanswered-form" : ""}`}>
                   <div className="ai-bubble-msg-content" lang={msg.language || (msg.sender === "user" ? undefined : language)} dir="auto">
                     {msg.sender === "user" ? msg.text : renderFormattedText(msg.text)}
                   </div>
+
+                  {msg.followUp && <p className="ai-bubble-follow-up">{msg.followUp}</p>}
+
+                  {msg.unanswered && (
+                    <div className="ai-bubble-unanswered-card">
+                      <div className="ai-bubble-submit-announcement" role="status" aria-live="polite">
+                        {formState.status === "submitted" && (
+                          <span className="ai-bubble-submit-success">
+                            <span className="ai-bubble-submit-success-mark" aria-hidden="true">✓</span>
+                            <span>{copy.submitted}</span>
+                          </span>
+                        )}
+                      </div>
+                      {formState.status !== "submitted" && (
+                        <>
+                          <p className="ai-bubble-unanswered-description">{copy.unansweredIntro}</p>
+                          <form
+                            className="ai-bubble-unanswered-form"
+                            aria-label={copy.formLabel}
+                            aria-busy={formState.status === "sending"}
+                            onSubmit={event => handleUnansweredSubmit(event, msg.id, msg.unansweredQuestion)}
+                          >
+                            {formState.error && (
+                              <p
+                                className="ai-bubble-submit-error"
+                                role="alert"
+                                tabIndex={-1}
+                                ref={element => {
+                                  if (element) unansweredErrorRefs.current[msg.id] = element;
+                                  else delete unansweredErrorRefs.current[msg.id];
+                                }}
+                              >
+                                {formState.error}
+                              </p>
+                            )}
+                            <label htmlFor={`ai-bubble-email-${msg.id}`}>{copy.emailLabel}</label>
+                            <input
+                              id={`ai-bubble-email-${msg.id}`}
+                              type="email"
+                              autoComplete="email"
+                              required
+                              maxLength={254}
+                              value={formState.email}
+                              disabled={formState.status === "sending"}
+                              onChange={event => updateUnansweredForm(msg.id, msg.unansweredQuestion, "email", event.target.value)}
+                            />
+                            <label htmlFor={`ai-bubble-question-${msg.id}`}>{copy.questionLabel}</label>
+                            <textarea
+                              id={`ai-bubble-question-${msg.id}`}
+                              required
+                              maxLength={2000}
+                              rows={3}
+                              value={formState.question}
+                              disabled={formState.status === "sending"}
+                              onChange={event => updateUnansweredForm(msg.id, msg.unansweredQuestion, "question", event.target.value)}
+                            />
+                            <p className="ai-bubble-contact-disclosure">{copy.contactDisclosure}</p>
+                            <button
+                              type="submit"
+                              className="ai-bubble-submit-btn"
+                              disabled={formState.status === "sending"}
+                            >
+                              {formState.status === "sending" ? copy.sendingQuestion : copy.submitQuestion}
+                            </button>
+                          </form>
+                        </>
+                      )}
+                    </div>
+                  )}
 
                   {/* Actions inside AI messages */}
                   {msg.actions && msg.actions.length > 0 && (
@@ -370,7 +554,8 @@ export default function AiSupportBubble() {
                   <span className="ai-bubble-msg-time">{msg.timestamp}</span>
                 </div>
               </div>
-            ))}
+              );
+            })}
 
             {isTyping && (
               <div className="ai-bubble-msg-row ai-row">
