@@ -199,19 +199,13 @@ function generateTicketNumber(existingTickets) {
 const STARTER_SUGGESTIONS = [
   "How do I request a loan?",
   "How are monthly contributions recorded?",
-  "What if I forgot my PIN?",
-  "How do meeting attendance and fines work?",
-  "How do dividends get calculated?",
-  "Talk to human support"
+  "What if I forgot my PIN?"
 ];
 
 const SWAHILI_STARTER_SUGGESTIONS = [
   "Ninawezaje kuomba mkopo?",
   "Michango ya kila mwezi hurekodiwaje?",
-  "Nifanye nini nikisahau PIN yangu?",
-  "Mahudhurio na faini za mikutano hufanyaje kazi?",
-  "Gawio huhesabiwaje?",
-  "Wasiliana na mhudumu wa msaada"
+  "Nifanye nini nikisahau PIN yangu?"
 ];
 
 const SWAHILI_ACTION_LABELS = {
@@ -387,27 +381,25 @@ function processAiChat(rawMessage, context = {}, state = {}) {
     actions: language === 'sw'
       ? actions.map(action => ({ ...action, label: SWAHILI_ACTION_LABELS[action.label] || action.label }))
       : actions,
-    related: (related.length > 0 ? related : [
-      'How do I request a loan?',
-      'How are monthly contributions recorded?',
-      'What if I forgot my PIN?',
-      'Talk to human support'
-    ]).map(question => language === 'sw' ? SWAHILI_RELATED_QUESTIONS[question] || question : question),
-    followUp: message ? localized("Would you like help with anything else?", "Je, kuna jambo lingine unalohitaji msaada nalo?") : "",
+    related: (related === null
+      ? null
+      : (related.length > 0 ? related : [
+        'How do I request a loan?',
+        'How are monthly contributions recorded?',
+        'What if I forgot my PIN?',
+        'Talk to human support'
+      ]).map(question => language === 'sw' ? SWAHILI_RELATED_QUESTIONS[question] || question : question)),
+    followUp: metadata.followUp || "",
     timestamp: new Date().toISOString(),
     ...metadata,
   });
 
-  if (!message) return reply(knowledgeAnswer('welcome', language, settings));
+  if (!message) return reply(knowledgeAnswer('welcome', language, settings), [], null);
 
   if (matchesSupportIntent(message, 'greeting')) {
     const greeting = user?.name ? localized(`Hello ${user.name}!`, `Habari ${user.name}!`) : '';
     const answer = knowledgeAnswer('greeting', language, settings);
-    return reply(greeting ? `${greeting}\n\n${answer}` : answer, [], [
-      'How do I request a loan?',
-      'How are monthly contributions recorded?',
-      'What if I forgot my PIN?'
-    ]);
+    return reply(greeting ? `${greeting}\n\n${answer}` : answer, [], null, { followUp: message ? localized("Would you like help with anything else?", "Je, kuna jambo lingine unalohitaji msaada nalo?") : "" });
   }
 
   const topicRoutes = [
@@ -482,7 +474,8 @@ function processAiChat(rawMessage, context = {}, state = {}) {
 
   for (const route of topicRoutes) {
     if (matchesSupportIntent(message, route.id)) {
-      return reply(knowledgeAnswer(route.id, language, settings, context.loanPolicy), route.actions, route.related || []);
+      return reply(knowledgeAnswer(route.id, language, settings, context.loanPolicy), route.actions, route.related || [], 
+        { followUp: message ? localized("Would you like help with anything else?", "Je, kuna jambo lingine unalohitaji msaada nalo?") : "" });
     }
   }
 
@@ -495,7 +488,9 @@ function processAiChat(rawMessage, context = {}, state = {}) {
         [
           { label: 'Browse All FAQs', target: '#faq-panel', action: 'navigate' },
           { label: 'Talk to Human Support', target: '#support-panel', action: 'open_ticket' }
-        ]
+        ],
+        {},
+        { followUp: message ? localized("Would you like help with anything else?", "Je, kuna jambo lingine unalohitaji msaada nalo?") : "" }
       );
     }
     return reply(
@@ -503,14 +498,17 @@ function processAiChat(rawMessage, context = {}, state = {}) {
       [
         { label: 'Browse All FAQs', target: '#faq-panel', action: 'navigate' },
         { label: 'Talk to Human Support', target: '#support-panel', action: 'open_ticket' }
-      ]
+      ],
+      {},
+      { followUp: message ? localized("Would you like help with anything else?", "Je, kuna jambo lingine unalohitaji msaada nalo?") : "" }
     );
   }
 
   return reply(knowledgeAnswer('unknown', language, settings), [
     { label: 'Submit Support Ticket', target: '#support-panel', action: 'open_ticket' },
-    { label: 'Browse FAQs', target: '#faq-panel', action: 'navigate' }
-  ], [], { unanswered: true, unansweredQuestion: sanitizeSupportSubmissionText(message), followUp: "" });
+    { label: 'Browse FAQs', target: '#faq-panel', action: 'navigate' },
+    { label: 'Contact Us', target: '#contact', action: 'navigate' }
+  ], null, { unanswered: true, unansweredQuestion: sanitizeSupportSubmissionText(message), followUp: localized("Would you like help with anything else?", "Je, kuna jambo lingine unalohitaji msaada nalo?") });
 }
 
 module.exports = {

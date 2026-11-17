@@ -62,7 +62,7 @@ test("the AI assistant asks whether more help is needed and offers a bilingual e
 
   assert.match(bubble, /msg\.followUp && <p className="ai-bubble-follow-up">/);
   assert.match(bubble, /msg\.unanswered &&/);
-  assert.match(bubble, /welcome: "👋 \*\*Hello! I am your Jirani Chama AI support agent/);
+  assert.match(bubble, /welcome: "Welcome to Jirani Chama AI Support/);
   assert.match(bubble, /one-time verification codes, full account numbers, or payment-card details/);
   assert.match(bubble, /unansweredIntro: "Review the email and question below/);
   assert.match(bubble, /unansweredIntro: "Kagua anwani ya barua pepe/);
@@ -71,7 +71,7 @@ test("the AI assistant asks whether more help is needed and offers a bilingual e
   assert.match(bubble, /role="status" aria-live="polite"/);
   assert.match(bubble, /formState\.status === "submitted"/);
   assert.match(bubble, /Replies usually take 5–7 working days/);
-  assert.match(bubble, /We couldn't confirm whether the email was delivered/);
+  assert.match(bubble, /We could not confirm whether the email was delivered/);
   assert.match(bubble, /handleActionClick\(\{ action: "open_ticket" \}\)/);
   assert.match(contactActions, /fetcher\("\/api\/contact"/);
   assert.match(supportStyles, /\.ai-bubble-msg-bubble\.ai-bubble-has-unanswered-form/);

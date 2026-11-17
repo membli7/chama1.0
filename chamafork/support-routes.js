@@ -1379,32 +1379,90 @@ function registerSupportRoutes(app, deps) {
   });
 
   // Chat with the in-app AI assistant (No external LLM/Gemini API calls)
-  app.post("/api/support/ai/chat", (req, res) => {
-    const state = ensureSupportState(getState());
-    const message = clean(req.body?.message || "");
-
-    if (!message || message.length > 2000) {
-      return res.status(400).json({ message: "Please provide a valid question under 2000 characters." });
+  // Simple in-memory rate limiting for AI chat (30 requests per minute per IP)
+  const aiChatRequests = new Map();
+  const aiChatLimiter = (req, res, next) => {
+    const ip = req.ip || req.socket?.remoteAddress || "unknown";
+    const now = Date.now();
+    const windowMs = 60 * 1000;
+    const maxRequests = 30;
+    
+    const requestTimes = aiChatRequests.get(ip) || [];
+    const recent = requestTimes.filter(time => now - time < windowMs);
+    
+    if (recent.length >= maxRequests) {
+      return res.status(429).json({ message: "Too many questions were sent. Please wait a moment before asking another." });
     }
-
-    if (!req.user && req.session?.userId) {
-      req.user = state.users.find(item => item.id === req.session.userId && item.status === "active");
+    
+    recent.push(now);
+    aiChatRequests.set(ip, recent);
+    
+    // Clean up old entries
+    if (recent.length > maxRequests + 10) {
+      aiChatRequests.set(ip, recent.slice(-maxRequests - 10));
     }
-    const userChama = req.user?.chamaId
-      ? state.chamas?.find(chama => chama.id === req.user.chamaId)
-      : null;
-    const loanPolicyEvent = req.user?.chamaId && Array.isArray(state.auditLog)
-      ? state.auditLog.slice().reverse().find(event => event.type === "loan.policy.updated" && event.chamaId === req.user.chamaId && event.policy)
-      : null;
-    const context = {
-      user: req.user ? { id: req.user.id, name: req.user.name, role: req.user.role, chamaId: req.user.chamaId } : null,
-      settings: userChama?.settings || {},
-      loanPolicy: loanPolicyEvent?.policy || null,
-      language: req.body?.language,
-    };
+    
+    next();
+  };
 
-    const aiResponse = processAiChat(message, context, state);
-    return res.json({ data: aiResponse });
+  app.post("/api/support/ai/chat", aiChatLimiter, async (req, res, next) => {
+    try {
+      const state = ensureSupportState(getState());
+      const message = clean(req.body?.message || "");
+
+      if (!message || message.length > 2000) {
+        return res.status(400).json({ message: "Please provide a valid question under 2000 characters." });
+      }
+
+      // Try to get user from session (optional)
+      let user = null;
+      if (req.session?.userId) {
+        user = state.users.find(item => item.id === req.session.userId && item.status === "active");
+      }
+      
+      // Check for PIN change requirement if authenticated
+      if (user?.mustChangePin) {
+        return res.status(403).json({ message: "Change your temporary PIN before making any records.", mustChangePin: true });
+      }
+
+      const userChama = user?.chamaId
+        ? state.chamas?.find(chama => chama.id === user.chamaId) || null
+        : null;
+      const loanPolicyEvent = user?.chamaId && Array.isArray(state.auditLog)
+        ? state.auditLog.slice().reverse().find(event => event.type === "loan.policy.updated" && event.chamaId === user.chamaId && event.policy)
+        : null;
+      const context = {
+        user: user ? { id: user.id, name: user.name, role: user.role, chamaId: user.chamaId } : null,
+        settings: userChama?.settings || {},
+        loanPolicy: loanPolicyEvent?.policy || null,
+        language: req.body?.language,
+      };
+
+      const aiResponse = processAiChat(message, context, state);
+      
+      // Log AI interaction for audit and quality improvement
+      state.auditLog.push({
+        id: newId(),
+        type: "support.ai_chat",
+        entityId: `${user?.id || 'anonymous'}:${Date.now()}`,
+        at: now(),
+        by: user ? { id: user.id, name: user.name, role: user.role } : { id: "anonymous", name: "Anonymous", role: "member" },
+        chamaId: user?.chamaId || null,
+        messageLength: message.length,
+        responseLanguage: aiResponse.language,
+      });
+      
+      try {
+        await persist(state);
+      } catch (persistError) {
+        // Log but don't fail the request
+        console.warn("Failed to persist AI chat audit log:", persistError.message);
+      }
+      
+      return res.json({ data: aiResponse });
+    } catch (error) {
+      return next(error);
+    }
   });
 }
 

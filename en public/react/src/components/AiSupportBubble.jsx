@@ -1,22 +1,22 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { submitUnansweredSupportQuestion } from "../contactActions.mjs";
 
 const CHAT_COPY = {
   en: {
-    welcome: "👋 **Hello! I am your Jirani Chama AI support agent.**\n\nI can answer questions about contributions, your Chama's loan rules, meeting attendance, PIN changes, and group features. How can I help you today? Ask a question or choose one of the suggested questions. For your security, please do not share passwords, PINs, one-time verification codes, full account numbers, or payment-card details in this chat. I will never ask you for these details.",
+    welcome: "Welcome to Jirani Chama AI Support. I can answer questions about contributions, your Chama's loan rules, meeting attendance, PIN changes, and group features. How can I help you today? Ask a question or choose one of the suggested questions. For your security, please do not share passwords, PINs, one-time verification codes, full account numbers, or payment-card details in this chat. I will never ask you for these details.",
     welcomeActions: ["Request a Loan", "View Ledger", "Talk to Human Support"],
     related: ["How do I request a loan?", "How are monthly contributions recorded?", "What if I forgot my PIN?", "Talk to human support"],
     cleared: "Conversation cleared. How can I assist you with Jirani Chama today?",
-    error: "I am having trouble answering right now. You can check our FAQs or submit a ticket directly to human support staff.",
+    error: "I am currently unable to provide an answer. You can check our FAQs or submit a ticket directly to human support staff.",
     unansweredIntro: "Review the email and question below. You can edit either before sending them to human support.",
     emailLabel: "Your email",
     questionLabel: "Your question",
     formLabel: "Send an unanswered question to support",
     submitQuestion: "Send to support",
     sendingQuestion: "Sending…",
-    submitted: "I've submitted your question to our human support team. Replies usually take 5–7 working days. Is there anything else I can help you with?",
+    submitted: "Your question has been submitted to our human support team. Replies usually take 5–7 working days. Is there anything else I can help you with?",
     submitError: "Your question was not submitted. Please try again or use the in-app support ticket.",
-    submitUnknownError: "We couldn't confirm whether the email was delivered. To avoid a duplicate request, use the in-app support ticket or contact the team before retrying.",
+    submitUnknownError: "We could not confirm whether the email was delivered. To avoid a duplicate request, use the in-app support ticket or contact the team before retrying.",
     rateLimitError: "Your question was not submitted because too many messages were sent. Please use the in-app support ticket or try again later.",
     ticketFallback: "Open in-app support ticket",
     requiredFields: "Please enter your email and question.",
@@ -37,11 +37,11 @@ const CHAT_COPY = {
     faqAction: "Browse FAQs"
   },
   sw: {
-    welcome: "👋 **Habari! Mimi ni msaidizi wa msaada wa AI wa Jirani Chama.**\n\nNaweza kujibu maswali kuhusu michango, kanuni za mikopo za chama chako, mahudhurio ya mikutano, kubadilisha PIN na vipengele vya kikundi. Nikusaidie vipi leo? Uliza swali au chagua mojawapo ya maswali yaliyopendekezwa. Kwa usalama wako, tafadhali usishiriki nenosiri, PIN, msimbo wa uthibitishaji wa mara moja, nambari kamili ya akaunti au maelezo ya kadi ya malipo katika gumzo hili. Sitakuomba taarifa hizo.",
+    welcome: "Karibu kwenye msaada wa Jirani Chama AI. Naweza kujibu maswali kuhusu michango, kanuni za mikopo za chama chako, mahudhurio ya mikutano, kubadilisha PIN, na vipengele vya kikundi. Nikusaidie vipi leo? Uliza swali au chagua mojawapo ya maswali yaliyopendekezwa. Kwa usalama wako, tafadhali usishiriki nenosiri, PIN, msimbo wa uthibitishaji wa mara moja, nambari kamili ya akaunti au maelezo ya kadi ya malipo katika gumzo hili. Sitakuomba taarifa hizo.",
     welcomeActions: ["Omba mkopo", "Tazama taarifa za hesabu", "Wasiliana na mhudumu wa msaada"],
     related: ["Ninawezaje kuomba mkopo?", "Michango ya kila mwezi hurekodiwaje?", "Nifanye nini nikisahau PIN yangu?", "Wasiliana na mhudumu wa msaada"],
     cleared: "Mazungumzo yamefutwa. Nikusaidie vipi kuhusu Jirani Chama leo?",
-    error: "Samahani, siwezi kujibu kwa sasa. Unaweza kuangalia maswali yanayoulizwa mara kwa mara au kutuma ombi kwa wahudumu wa msaada.",
+    error: "Samahani, sijaweza kujibu hivi karibuni. Unaweza kuangalia maswali ya mara kwa mara au kutuma ombi kwa wahudumu wa msaada.",
     unansweredIntro: "Kagua anwani ya barua pepe na swali hapa chini. Unaweza kuhariri mojawapo kabla ya kulituma kwa timu ya msaada wa kibinadamu.",
     emailLabel: "Barua pepe yako",
     questionLabel: "Swali lako",
@@ -68,7 +68,8 @@ const CHAT_COPY = {
     privacy: "Msaada wa AI • Barua pepe hutumwa tu unapotuma swali lisilojibiwa • ",
     contact: "Wasiliana na wahudumu",
     humanAction: "Wasiliana na mhudumu wa msaada",
-    faqAction: "Angalia maswali yanayoulizwa mara kwa mara"
+    faqAction: "Angalia maswali yanayoulizwa mara kwa mara",
+    contactAction: "Wasiliana"
   }
 };
 
@@ -96,8 +97,8 @@ function createWelcomeMessage(language, id = "msg-welcome") {
 
 export default function AiSupportBubble() {
   const [isOpen, setIsOpen] = useState(false);
-  const [language, setLanguage] = useState(getAssistantLanguage);
-  const copy = CHAT_COPY[language];
+  const [language, setLanguage] = useState(getAssistantLanguage());
+  const copy = useMemo(() => CHAT_COPY[language], [language]);
   const [messages, setMessages] = useState(() => [createWelcomeMessage(getAssistantLanguage())]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -150,6 +151,20 @@ export default function AiSupportBubble() {
       errorFocusTarget.current = null;
     }
   }, [unansweredForms]);
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (!isOpen) return;
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      } else if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        handleSendMessage();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, handleSendMessage]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -315,6 +330,10 @@ export default function AiSupportBubble() {
 
   const handleClearChat = () => {
     setMessages([{ ...createWelcomeMessage(language, "msg-welcome-new"), text: copy.cleared }]);
+    setUnansweredForms({});
+    Object.keys(unansweredErrorRefs.current).forEach((key) => {
+      delete unansweredErrorRefs.current[key];
+    });
   };
 
   // Simple formatting helper for markdown-style bold, bullet points, headers
@@ -426,7 +445,7 @@ export default function AiSupportBubble() {
           </div>
 
           {/* Messages Body */}
-          <div className="ai-bubble-messages">
+          <div className="ai-bubble-messages" role="log" aria-live="polite" aria-label="Chat messages">
             {messages.map(msg => {
               const formState = msg.unanswered
                 ? unansweredForms[msg.id] || {
@@ -510,7 +529,7 @@ export default function AiSupportBubble() {
                               id={`ai-bubble-question-${msg.id}`}
                               required
                               maxLength={2000}
-                              rows={3}
+                              rows={2}
                               value={formState.question}
                               disabled={formState.status === "sending"}
                               onChange={event => updateUnansweredForm(msg.id, msg.unansweredQuestion, "question", event.target.value)}
@@ -571,7 +590,7 @@ export default function AiSupportBubble() {
             })}
 
             {isTyping && (
-              <div className="ai-bubble-msg-row ai-row">
+              <div className="ai-bubble-msg-row ai-row" role="status" aria-live="polite">
                 <div className="ai-msg-avatar" aria-hidden="true">🤖</div>
                 <div className="ai-bubble-msg-bubble ai-bubble typing-bubble">
                   <span className="typing-dot" />
@@ -587,7 +606,7 @@ export default function AiSupportBubble() {
           {/* Suggested Starter Chips */}
           {messages.length === 1 && suggestions.length > 0 && (
             <div className="ai-bubble-starter-bar">
-              {suggestions.slice(0, 3).map((s, idx) => (
+              {suggestions.slice(0, 2).map((s, idx) => (
                 <button
                   key={idx}
                   type="button"

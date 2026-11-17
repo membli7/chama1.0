@@ -6,7 +6,9 @@
 
 ## Executive recommendation
 
-Treat the current application as **not cleared for production launch** until the cash-entry contract is corrected and deployment recovery/perimeter gates have evidence. For tenant integrity, distinguish three states: (1) an approved design, which is not enforcement and does not clear the release gate; (2) a migration implemented and validated in staging with evidence, after which the technical gate can be considered met subject to separate deployment authorization; or (3) a deliberate deferral recorded with an owner, rationale, compensating controls, and residual-risk acceptance. Deferral is not completed enforcement and does not by itself clear the production gate. The form/API mismatch and missing tenant-aware foreign keys are visible in source; setup exposure, partial-startup impact, and production recovery need deployment validation; session metrics and map bounds are hardening work.
+At the time of the 2026-11-10 audit, the application was not cleared for production: its cash-entry contract was unresolved and deployment recovery/perimeter gates lacked evidence. For tenant integrity, the audit distinguished three states: (1) an approved design, which is not enforcement and does not clear the release gate; (2) a migration implemented and validated in staging with evidence, after which the technical gate can be considered met subject to separate deployment authorization; or (3) a deliberate deferral recorded with an owner, rationale, compensating controls, and residual-risk acceptance. Deferral is not completed enforcement and does not by itself clear the production gate. At that time, the form/API mismatch and missing tenant-aware foreign keys were visible in source; setup exposure, partial-startup impact, and production recovery needed deployment validation; session metrics and map bounds were hardening work.
+
+**Current disposition (2026-11-17):** The cash-entry mismatch described in the original P0 finding has since been addressed in the current source: cash-out and “Other Income” are not offered, and unsupported values are rejected. The focused client cash-entry tests passed in the current full-suite run. Overall verification remains blocked: `npm.cmd test` on `2dde66d` exited 1 (353 tests: 211 passed, 128 failed, 3 skipped), with loopback `EACCES` and test-server startup errors. This update supersedes the original cash-entry P0 as an implementation task, but does not clear the production no-go; the test, deployment, tenant-integrity, recovery, manual/pilot, and cleanup gates remain open. See the [current production-readiness status](../docs/docs/production-readiness.md).
 
 This is a remediation plan, not authorization to implement schema changes, touch a live database, change payment integrations, or deploy. Project rules prohibit changing the data format/schema without approval. If a remediation requires that, stop at the decision gate and request explicit authorization.
 
@@ -14,30 +16,32 @@ This is a remediation plan, not authorization to implement schema changes, touch
 
 Record these decisions in `TASKS.md` before changing business behavior:
 
-1. **Cash-out and “Other Income”:** Are these supported operations? The UI currently offers them, but the reviewed submit path does not implement them as supported server-side cash flows. If they are not in scope, remove/disable the controls. If they are in scope, specify eligible roles, transaction types, accounting effect, audit details, correction/reversal rules, and whether member/loan fields apply. Do not infer these rules from the current form.
+1. **Cash-out and “Other Income” — resolved 2026-11-17:** They are unsupported in the current product: the UI omits them and the server rejects unsupported values. Do not add them without a separate product decision specifying eligible roles, transaction types, accounting effect, audit details, correction/reversal rules, and whether member/loan fields apply.
 2. **Accounting model:** Is Chama a cash-entry register or a balanced double-entry ledger? The source contains a `ledger_entries` table and stores/loads rows, but this audit found no application posting logic that creates balanced journals. Do not claim double-entry consistency or add journal constraints until the product requirement is decided.
 3. **Tenant database enforcement:** The composite-FK and JSON-link proposals require schema changes. Approve or decline that schema work explicitly before any migration is registered or run. The current project rule is to stop and ask rather than change schema implicitly.
 4. **Deployment target:** Confirm staging is disposable, isolated, and distinct from production before any later SQL or integration test. This audit did not establish the current staging database identity or run SQL.
 
-## Priority 0 — Make the financial-entry UI truthful and operable
+## Priority 0 — Financial-entry UI/API mismatch (implementation addressed; verification open)
 
-**Finding:** The cash form uses `name="reason"`, but the ordinary cash handlers read `req.body.note` and require a 3–500 character note. The form also offers cash-out controls and “Other Income”; the reviewed submit handler routes by `paymentType`, does not map `flowDirection`, and the server’s accepted types do not include “Other Income.” Sources: `en public/index.html:508–541`, `en public/chama.js:1113–1136`, `chamafork/server.js:123, 1947–1968`.
+**Finding at the 2026-11-10 audit:** The cash form used `name="reason"`, but the ordinary cash handlers read `req.body.note` and require a 3–500 character note. The form also offered cash-out controls and “Other Income”; the reviewed submit handler routed by `paymentType`, did not map `flowDirection`, and the server’s accepted types did not include “Other Income.” Sources: `en public/index.html:508–541`, `en public/chama.js:1113–1136`, `chamafork/server.js:123, 1947–1968`.
 
-**Plan:**
+**Status (2026-11-17):** The current UI omits cash-out and “Other Income,” and the server rejects unsupported values. Focused client checks passed; the full suite failed, so server-side financial acceptance still needs a clean verification run.
+
+**Original plan (2026-11-10):**
 
 - After the business decision above, align the field contract so the submitted payload uses the server’s canonical `note` field. Keep server-side validation authoritative.
 - If cash-out and other-income are not approved, remove or disable those controls and reject unsupported values on the server. Do not merely hide controls while leaving undocumented API behavior.
 - If they are approved, design the complete server-side cash-flow transition first: authenticate and authorize the actor, bind the member/loan to the same chama where applicable, validate the category and amount, append an audit event, prevent duplicate writes, and persist the cash entry and its audit record atomically. Do not implement any provider payment or money-transfer behavior as part of this task.
 - Ensure the confirmation dialog accurately says what the endpoint will record. Keep “recorded cash” distinct from money movement or reconciliation.
 
-**Tests and acceptance:**
+**Original tests and acceptance criteria:**
 
 - Add client contract tests asserting the exact `FormData` to JSON mapping and selected endpoint for every supported option.
 - Add server integration tests for valid notes, missing/short/long notes, unsupported types, unsupported directions, invalid tenant IDs, repeated idempotency keys, and successful audit/persistence.
 - Verify a cash-out selection cannot be stored as an inflow. If the feature is intentionally unsupported, verify the UI does not offer it and the API rejects it.
 - Run the focused financial/client tests, then the full `npm.cmd test` suite from `chamafork` before marking the implementation complete.
 
-**Priority:** P0 before pilot or production use of this form. Relative effort: small if removing unsupported controls; medium/large if defining and implementing new cash-out semantics.
+**Current gate:** P0 verification remains before pilot or production use of this form. New cash-out semantics require a separate product decision.
 
 ## Priority 1 — Close the tenant relationship integrity gap (approval-gated schema work)
 
@@ -118,7 +122,7 @@ The non-production process-local failure map can exceed its configured cap if al
 - Migration runner `chamafork/db/migrate.js:34–53` executes a fixed list transactionally but has no visible applied-version/checksum ledger or migration-specific lock. Design a run-once/versioning mechanism before adding non-idempotent migrations. Avoid combining destructive changes with automatic startup.
 - Migration 006 adds child-side FK-support indexes with a five-second lock timeout (`db/006_fk_support_indexes.sql:6–64`) and is already registered. Preserve this work; the earlier missing-index concern is not an active finding in this audit.
 - Snapshot persistence clears and rewrites tenant repositories in a transaction (`repo/postgres-state.js:468–531`). The readiness notes state one server process per database (`docs/docs/production-readiness.md:44`). Benchmark with representative synthetic data and realistic record counts. If it no longer meets an agreed latency/lock budget, propose targeted writes separately; that is an architectural/data-format decision, not an automatic refactor.
-- Resolve the README/source mismatch about the default `DATA_BACKEND` (`README.md:113`; `server.js:113–117`) and add a configuration test so local startup cannot silently select the wrong store.
+- The README/source mismatch about the default `DATA_BACKEND` was corrected on 2026-11-17 in `README.md` and `docs/docs/production-readiness.md`. A source-level default assertion exists in `chamafork/test/server.integration.test.js`; full-suite verification still needs a passing rerun.
 
 **Priority:** P3 unless measurement or deployment evidence escalates it.
 

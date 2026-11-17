@@ -46,17 +46,20 @@
 
 ## Production release gate (2026-11-09)
 
+**Current status (2026-11-17): NOT production-ready.**
+
+- [ ] Re-run the full suite in a supported environment and resolve every genuine failure. The 2026-11-17 root-level `npm.cmd test` run on `2dde66d` exited 1 (353 tests: 211 passed, 128 failed, 3 skipped); the log included `EACCES` loopback connections and test-server startup errors, so separate environmental restrictions from actual regressions before release.
 - [ ] Complete manual acceptance walkthroughs for Chairperson, Secretary, Treasurer, and Member accounts.
 - [ ] Complete a participating-chama pilot and record workflow, usability, and recovery results.
 - [ ] Verify the production boundary: live HTTPS/TLS, reverse-proxy forwarded headers and exact trusted proxy IPs, firewalling, and browser behavior on the canonical origin.
-- [ ] Verify the production services: PostgreSQL RLS runtime role, verified database TLS, Redis TLS/shared sessions, rate-limit persistence, and startup configuration checks.
+- [ ] Verify the production services: PostgreSQL RLS runtime role, verified database TLS, Redis TLS/shared sessions, rate-limit persistence, and required production secrets/startup configuration checks.
 - [ ] Configure and test scheduled PostgreSQL backups and complete a real restore drill.
 - [ ] Remove or reset QA accounts and synthetic loans, contributions, votes, and attendance data; confirm QA PINs are not reused.
-- [ ] Push the latest local safeguards/month-end review commit and resolve unrelated worktree changes before release.
+- [ ] Review and integrate/push the final tested release candidate; preserve and resolve the pre-existing worktree changes before release.
 - [x] Staging deployment is the current readiness target; real-member production launch remains blocked until the items above are complete.
 
 ## Step 0: setup
-- [x] Historical: initial readiness work used `review-fixes`. The current branch is `codex/subscription-access`; safeguards and month-end review commit `c7149c9` is local and has not been pushed.
+- [x] Historical: initial readiness work used `review-fixes`. As checked 2026-11-17, the current checkout is `security/fix-runtime-secrets` at `2dde66d`; the worktree is a work in progress, not a release candidate.
 - [x] Save the security report as `docs/review.md`. The UX plan currently lives at `docs/docs/docs/ux-plan.md` (the earlier `docs/ux-plan.md` path is stale).
 - [x] Add `AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`, and `TASKS.md`.
 - [x] Commit the verified local safeguards and month-end review changes; do not push as part of local readiness work.

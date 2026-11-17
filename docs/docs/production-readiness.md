@@ -1,6 +1,14 @@
 # Production readiness limits
 
-## Latest synthetic safeguards check (2026-11-08)
+## Current candidate status (2026-11-17)
+
+- Current checkout: `security/fix-runtime-secrets` at `2dde66d` (checked 2026-11-17). This review changed Markdown only and made no commit, push, or deployment.
+- The root-level `npm.cmd test` run on `2dde66d` exited 1: 353 tests (211 passed, 128 failed, 3 skipped). The log includes `EACCES` loopback connection errors and test-server startup failures. This does not prove every failure is a product regression; rerun in a supported environment and triage before promotion.
+- Cash-out and “Other Income” are not remaining feature work: current client tests assert they are unavailable, and server code rejects unsupported values. The focused client cash-entry tests passed in the current run; server-side financial regressions were not verified green because the suite failed.
+- Release blockers: full-suite verification; role-by-role and phone/tablet walkthroughs; a participating-chama pilot; staging checks for HTTPS/proxy/firewall/canonical origin, PostgreSQL RLS role and TLS, Redis TLS/shared sessions, persistent rate limits and required startup secrets; explicit approval plus staging validation of tenant-integrity constraints; scheduled backups and an isolated restore; QA-account/test-record/PIN cleanup; and a clean, reviewed release candidate before real users.
+- For real lending, legal/data-protection review, operation of the human-review process, and off-app disbursement arrangements remain required; the app does not disburse money.
+
+## Synthetic safeguards check (2026-11-08; historical)
 
 - Focused financial, tenant-isolation, chat-event fallback, repository, and restore tests passed: 23 passed, 0 failed. The standalone frontend regression suite passed: 42 passed, 0 failed.
 - Full suite from `chamafork`: `npm.cmd test` passed with 199 passed, 0 failed, and 1 skipped. The skipped PostgreSQL tenant-foreign-key integration requires `TENANT_FK_TEST_DATABASE_URL`; no database connection was used.
@@ -33,9 +41,9 @@ Evidence checked on 2026-10-20 for this checkout. This note records local observ
 - A fresh production-configuration review still found this machine's local environment unsuitable for production: PostgreSQL and Redis connections are plaintext, and required production origin, proxy, TLS, and metrics-secret settings are not configured. These are local-development observations, not production environment evidence.
 - This verification did not test external routing, certificate renewal, firewall rules, production secrets, scheduled backups, or a production restore. Those remain deployment gates.
 
-## Verified in the current environment
+## Prior local environment observations (2026-10-23 snapshot)
 
-- The application supports JSON and PostgreSQL. `DATA_BACKEND` defaults to JSON when unset; the current local `.env` selects PostgreSQL.
+- The application supports JSON and PostgreSQL. Current source defaults to PostgreSQL when `DATA_BACKEND` is unset; set `DATA_BACKEND=json` explicitly for local/test JSON runs. The local `.env` selection was not rechecked in this review.
 - A read-only PostgreSQL connection succeeded. The app-role tenant directory contains one chama. Counting records inside that chama's RLS context returned 5 users, 5 memberships, 6 contributions, 1 loan, 4 attendance rows, 1 attendance register, 8 transactions, 24 audit records, 2 messages, 4 invitations, and 4 penalties; dividends, ledger entries, loan repayments, and M-Pesa callbacks were empty. The database has 33 foreign keys.
 - `chamafork/data.json` also exists and parses, with 1 user and no transactions, loans, payouts, invitations, leadership changes, attendance registers, audit records, penalties, dividends, or messages. It is not the selected backend; the PostgreSQL snapshot is populated and materially different. Do not run an import from this JSON snapshot over PostgreSQL. The importer is absent from this checkout.
 - The application was not listening on `127.0.0.1:8000` during the check, so its active runtime backend and health endpoint could not be verified.

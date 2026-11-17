@@ -73,7 +73,7 @@ test("offers email follow-up without a premature close while the assistant has n
 
   assert.equal(response.unanswered, true);
   assert.equal(response.unansweredQuestion, question);
-  assert.equal(response.followUp, "");
+  assert.equal(response.followUp, "Would you like help with anything else?");
 });
 
 test("redacts a payment-card number before prefilling an unanswered support question", () => {
