@@ -93,7 +93,7 @@ Programu haifanyi uchakataji au ulinganishaji wa michango ya chama kupitia M-PES
 
 ## intent:pin
 **Triggers (English):** pin | password | forgot | forgot pin | reset | reset pin | pin reset | lockout | unlock | account locked | login locked | recovery code | code
-**Triggers (Kiswahili):** pin | namba ya siri | nenosiri | nimesahau pin | kusahau pin | kuweka upya pin | poteza | kupoteza | sikumbuki | fungua akaunti | msimbo | akaunti imefungwa
+**Triggers (Kiswahili):** pin | namba ya siri | namba yangu ya siri | nenosiri | nimesahau pin | kusahau pin | kuweka upya pin | poteza | kupoteza | sikumbuki | fungua akaunti | msimbo | akaunti imefungwa
 ### English
 - New PINs must meet the displayed **6–12 digit** requirement. A legacy 4-digit PIN can still be used to sign in, after which the account must change it.
 - After five failed sign-in attempts for a phone number or IP address, the login is locked for 15 minutes.

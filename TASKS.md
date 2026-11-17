@@ -130,4 +130,4 @@ Attendance tracking scope decision (resolved): restore and test attendance end t
 
 
 ## Security remediation decision (2026-11-10)
-- Cash-out and “Other Income” are unsupported for now. Remove/disable those UI controls and reject unsupported values at the server boundary until their behavior is explicitly specified and approved.
+- Cash-out and “Other Income” are already unsupported. The server rejects `flowDirection`/cash-out fields and `cashOutType`/`cashOutLoanId`/`customType` at the boundary (`server.js`), and `PAYMENT_TYPES` only allows Monthly Contribution, Loan Repayment, and Fine — no “Other Income.” Regression tests cover this.

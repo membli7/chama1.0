@@ -1,9 +1,13 @@
-import { execSync } from 'child_process';
-import fs from 'fs';
-import path from 'path';
+"use strict";
+
+const { test, describe } = require("node:test");
+const assert = require("node:assert/strict");
+const { execSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
 
 const accountsPath = path.resolve(__dirname, '..', 'uploads', 'profile-details.json');
-const scriptPath = path.resolve(__dirname, '..', '..', 'scripts', 'clear-accounts.js');
+const scriptPath = path.resolve(__dirname, '..', 'scripts', 'clear-accounts.js');
 
 describe('Account deletion script', () => {
   test('clears all accounts', () => {
@@ -13,6 +17,6 @@ describe('Account deletion script', () => {
     // Run the clear script
     execSync(`node "${scriptPath}"`);
     const result = JSON.parse(fs.readFileSync(accountsPath, 'utf8'));
-    expect(result).toEqual({});
+    assert.deepEqual(result, {});
   });
 });

@@ -1387,6 +1387,9 @@ function registerSupportRoutes(app, deps) {
       return res.status(400).json({ message: "Please provide a valid question under 2000 characters." });
     }
 
+    if (!req.user && req.session?.userId) {
+      req.user = state.users.find(item => item.id === req.session.userId && item.status === "active");
+    }
     const userChama = req.user?.chamaId
       ? state.chamas?.find(chama => chama.id === req.user.chamaId)
       : null;

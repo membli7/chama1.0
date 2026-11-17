@@ -103,6 +103,8 @@ before(async () => {
       PORT: String(testPort),
       APP_BIND_HOST: "127.0.0.1",
       SESSION_SECRET: "integration-test-session-secret",
+      ONE_TIME_CODE_HMAC_SECRET: "integration-test-one-time-code-hmac-secret-0123456789abcdef",
+      METRICS_BEARER_TOKEN: "integration-test-metrics-bearer-token-0123456789abcdef",
       REDIS_URL: "",
       SESSION_STORE: "memory",
       PIN_RECOVERY_TEST_REDIS_URL: "",
