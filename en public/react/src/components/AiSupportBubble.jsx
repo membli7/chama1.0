@@ -3,20 +3,22 @@ import { submitUnansweredSupportQuestion } from "../contactActions.mjs";
 
 const CHAT_COPY = {
   en: {
-    welcome: "👋 **Hello! I am your Jirani Chama AI Assistant.**\n\nI can answer questions about contributions, loan limits, meeting attendance, PIN changes, and group rules. How can I assist you today?",
+    welcome: "👋 **Hello! I am your Jirani Chama AI support agent.**\n\nI can answer questions about contributions, your Chama's loan rules, meeting attendance, PIN changes, and group features. How can I help you today? Ask a question or choose one of the suggested questions. For your security, please do not share passwords, PINs, one-time verification codes, full account numbers, or payment-card details in this chat. I will never ask you for these details.",
     welcomeActions: ["Request a Loan", "View Ledger", "Talk to Human Support"],
     related: ["How do I request a loan?", "How are monthly contributions recorded?", "What if I forgot my PIN?", "Talk to human support"],
     cleared: "Conversation cleared. How can I assist you with Jirani Chama today?",
     error: "I am having trouble answering right now. You can check our FAQs or submit a ticket directly to human support staff.",
-    unansweredIntro: "Leave your email so the support team can follow up. You can edit your question before sending.",
+    unansweredIntro: "Review the email and question below. You can edit either before sending them to human support.",
     emailLabel: "Your email",
     questionLabel: "Your question",
     formLabel: "Send an unanswered question to support",
     submitQuestion: "Send to support",
     sendingQuestion: "Sending…",
-    submitted: "Submitted — your question and email have been sent to support.",
-    submitError: "We couldn’t send that just now. Please try again.",
-    rateLimitError: "Too many messages were sent. Please try again later.",
+    submitted: "I've submitted your question to our human support team. Replies usually take 5–7 working days. Is there anything else I can help you with?",
+    submitError: "Your question was not submitted. Please try again or use the in-app support ticket.",
+    submitUnknownError: "We couldn't confirm whether the email was delivered. To avoid a duplicate request, use the in-app support ticket or contact the team before retrying.",
+    rateLimitError: "Your question was not submitted because too many messages were sent. Please use the in-app support ticket or try again later.",
+    ticketFallback: "Open in-app support ticket",
     requiredFields: "Please enter your email and question.",
     contactDisclosure: "Submitting shares your email and question with the support team. They can reply to this address.",
     trigger: "AI Support",
@@ -35,20 +37,22 @@ const CHAT_COPY = {
     faqAction: "Browse FAQs"
   },
   sw: {
-    welcome: "👋 **Habari! Mimi ni msaidizi wako wa AI wa Jirani Chama.**\n\nNaweza kujibu maswali kuhusu michango, mipaka ya mikopo, mahudhurio ya mikutano, kubadilisha PIN na sheria za kikundi. Nikusaidie vipi leo?",
+    welcome: "👋 **Habari! Mimi ni msaidizi wa msaada wa AI wa Jirani Chama.**\n\nNaweza kujibu maswali kuhusu michango, kanuni za mikopo za chama chako, mahudhurio ya mikutano, kubadilisha PIN na vipengele vya kikundi. Nikusaidie vipi leo? Uliza swali au chagua mojawapo ya maswali yaliyopendekezwa. Kwa usalama wako, tafadhali usishiriki nenosiri, PIN, msimbo wa uthibitishaji wa mara moja, nambari kamili ya akaunti au maelezo ya kadi ya malipo katika gumzo hili. Sitakuomba taarifa hizo.",
     welcomeActions: ["Omba mkopo", "Tazama taarifa za hesabu", "Wasiliana na mhudumu wa msaada"],
     related: ["Ninawezaje kuomba mkopo?", "Michango ya kila mwezi hurekodiwaje?", "Nifanye nini nikisahau PIN yangu?", "Wasiliana na mhudumu wa msaada"],
     cleared: "Mazungumzo yamefutwa. Nikusaidie vipi kuhusu Jirani Chama leo?",
     error: "Samahani, siwezi kujibu kwa sasa. Unaweza kuangalia maswali yanayoulizwa mara kwa mara au kutuma ombi kwa wahudumu wa msaada.",
-    unansweredIntro: "Acha anwani yako ya barua pepe ili timu ya msaada iweze kukujibu. Unaweza kuhariri swali kabla ya kulituma.",
+    unansweredIntro: "Kagua anwani ya barua pepe na swali hapa chini. Unaweza kuhariri mojawapo kabla ya kulituma kwa timu ya msaada wa kibinadamu.",
     emailLabel: "Barua pepe yako",
     questionLabel: "Swali lako",
     formLabel: "Tuma swali lisilojibiwa kwa timu ya msaada",
     submitQuestion: "Tuma kwa timu ya msaada",
     sendingQuestion: "Inatuma…",
-    submitted: "Imetumwa — swali na barua pepe yako vimetumwa kwa timu ya msaada.",
-    submitError: "Hatukuweza kutuma sasa hivi. Tafadhali jaribu tena.",
-    rateLimitError: "Umetuma ujumbe mwingi. Tafadhali jaribu tena baadaye.",
+    submitted: "Nimewasilisha swali lako kwa timu yetu ya msaada wa kibinadamu. Kwa kawaida majibu huchukua siku 5–7 za kazi. Je, kuna jambo lingine ninaloweza kukusaidia nalo?",
+    submitError: "Swali lako halikutumwa. Tafadhali jaribu tena au tumia ombi la msaada ndani ya programu.",
+    submitUnknownError: "Hatukuweza kuthibitisha kama barua pepe ilitumwa. Ili kuepuka ombi la kurudia, tumia ombi la msaada ndani ya programu au wasiliana na timu kabla ya kujaribu tena.",
+    rateLimitError: "Swali lako halikutumwa kwa sababu ujumbe mwingi umetumwa. Tafadhali tumia ombi la msaada ndani ya programu au jaribu tena baadaye.",
+    ticketFallback: "Fungua ombi la msaada ndani ya programu",
     requiredFields: "Tafadhali weka barua pepe yako na swali.",
     contactDisclosure: "Ukituma, anwani yako ya barua pepe na swali zitatumwa kwa timu ya msaada. Wanaweza kukujibu kupitia anwani hii.",
     trigger: "Msaada wa AI",
@@ -290,7 +294,7 @@ export default function AiSupportBubble() {
       errorFocusTarget.current = messageId;
       setUnansweredForms(previous => ({
         ...previous,
-        [messageId]: { ...submission, status: "idle", error: copy.submitError },
+        [messageId]: { ...submission, status: "idle", error: copy.submitUnknownError },
       }));
     }
   };
@@ -469,17 +473,26 @@ export default function AiSupportBubble() {
                             onSubmit={event => handleUnansweredSubmit(event, msg.id, msg.unansweredQuestion)}
                           >
                             {formState.error && (
-                              <p
-                                className="ai-bubble-submit-error"
-                                role="alert"
-                                tabIndex={-1}
-                                ref={element => {
-                                  if (element) unansweredErrorRefs.current[msg.id] = element;
-                                  else delete unansweredErrorRefs.current[msg.id];
-                                }}
-                              >
-                                {formState.error}
-                              </p>
+                              <>
+                                <p
+                                  className="ai-bubble-submit-error"
+                                  role="alert"
+                                  tabIndex={-1}
+                                  ref={element => {
+                                    if (element) unansweredErrorRefs.current[msg.id] = element;
+                                    else delete unansweredErrorRefs.current[msg.id];
+                                  }}
+                                >
+                                  {formState.error}
+                                </p>
+                                <button
+                                  type="button"
+                                  className="ai-bubble-submit-btn ai-bubble-ticket-fallback"
+                                  onClick={() => handleActionClick({ action: "open_ticket" })}
+                                >
+                                  {copy.ticketFallback}
+                                </button>
+                              </>
                             )}
                             <label htmlFor={`ai-bubble-email-${msg.id}`}>{copy.emailLabel}</label>
                             <input

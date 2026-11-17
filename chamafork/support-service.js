@@ -271,6 +271,15 @@ function normalizeSupportText(value) {
   return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
+function sanitizeSupportSubmissionText(value) {
+  return String(value || "")
+    .replace(/\b(password|passcode)\b\s*(?:(?:is|was)\s+|[:=#]\s*)([^,;.!?\r\n]+)/gi, "$1: [redacted]")
+    .replace(/\b(pin|one[-\s]?time(?:\s+verification)?(?:\s+(?:password|code))?|verification code|recovery code|otp|security code|cvv|cvc)\b\s*(?:(?:is|was)\s+|[:=#]\s*)([^\s,;.!?]+)/gi, "$1: [redacted]")
+    .replace(/\b(pin|one[-\s]?time(?:\s+verification)?(?:\s+(?:password|code))?|verification code|recovery code|otp|security code|cvv|cvc)\b\s+(\d{3,})\b/gi, "$1: [redacted]")
+    .replace(/\b(account(?: number| no\.?)?|acct(?: number| no\.?)?)\b\s*(?:(?:is|was)\s+|[:=#]\s*|\s+)((?:\d[ -]?){5,}\d)\b/gi, "$1: [redacted]")
+    .replace(/(?<!\d)(?:\d[ -]?){12,18}\d(?!\d)/g, "[redacted payment-card number]");
+}
+
 function matchesSupportIntent(message, intentId) {
   const topic = SUPPORT_KNOWLEDGE[intentId];
   if (!topic) return false;
@@ -501,7 +510,7 @@ function processAiChat(rawMessage, context = {}, state = {}) {
   return reply(knowledgeAnswer('unknown', language, settings), [
     { label: 'Submit Support Ticket', target: '#support-panel', action: 'open_ticket' },
     { label: 'Browse FAQs', target: '#faq-panel', action: 'navigate' }
-  ], [], { unanswered: true, unansweredQuestion: message });
+  ], [], { unanswered: true, unansweredQuestion: sanitizeSupportSubmissionText(message), followUp: "" });
 }
 
 module.exports = {
@@ -518,5 +527,6 @@ module.exports = {
   sanitizeTicketForUser,
   keywordSearchFaqs,
   generateTicketNumber,
+  sanitizeSupportSubmissionText,
   processAiChat,
 };

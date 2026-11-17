@@ -1,6 +1,8 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
-const { processAiChat } = require("../support-service");
+const fs = require("node:fs");
+const path = require("node:path");
+const { processAiChat, sanitizeSupportSubmissionText } = require("../support-service");
 
 test("answers loan questions from current knowledge without a universal share multiplier", () => {
   const response = processAiChat("How much can I borrow?", {
@@ -19,6 +21,14 @@ test("answers loan questions from current knowledge without a universal share mu
   assert.match(response.reply, /Group-balance cap: 80%/);
   assert.match(response.reply, /up to KES 50000; at least 30 active-membership days and KES 1000/);
   assert.doesNotMatch(response.reply, /3 times your share capital/i);
+});
+
+test("the integrated support skill uses the Jirani Chama name and approved reply estimate", () => {
+  const skill = fs.readFileSync(path.join(__dirname, "..", "skills", "jirani-chama-support", "SKILL.md"), "utf8");
+
+  assert.match(skill, /^name: jirani-chama-support$/m);
+  assert.match(skill, /Replies usually take 5–7 working days/);
+  assert.doesNotMatch(skill, /Jirani Channel/);
 });
 
 test("answers a Kiswahili loan question in Kiswahili using the supplied Chama rate", () => {
@@ -57,13 +67,27 @@ test("does not answer an unrelated personal-balance question with a loosely matc
   assert.doesNotMatch(response.reply, /A loan FAQ answer/);
 });
 
-test("offers email follow-up with the original query when the assistant has no reliable answer", () => {
+test("offers email follow-up without a premature close while the assistant has no reliable answer", () => {
   const question = "How do I challenge a disputed audit entry?";
   const response = processAiChat(question);
 
   assert.equal(response.unanswered, true);
   assert.equal(response.unansweredQuestion, question);
-  assert.equal(response.followUp, "Would you like help with anything else?");
+  assert.equal(response.followUp, "");
+});
+
+test("redacts a payment-card number before prefilling an unanswered support question", () => {
+  const response = processAiChat("How do I challenge a disputed audit entry? 4111 1111 1111 1111");
+
+  assert.equal(response.unanswered, true);
+  assert.equal(response.unansweredQuestion, "How do I challenge a disputed audit entry? [redacted payment-card number]");
+});
+
+test("redacts common authentication secrets and full account numbers from support text", () => {
+  const sanitized = sanitizeSupportSubmissionText("My PIN is 123456; OTP 654321; one-time verification code is 777888; account number: 1234567890; card 4111 1111 1111 1111; CVC: 123; password: my secret phrase. Please help.");
+
+  assert.equal(sanitized, "My PIN: [redacted]; OTP: [redacted]; one-time verification code: [redacted]; account number: [redacted]; card [redacted payment-card number]; CVC: [redacted]; password: [redacted]. Please help.");
+  assert.doesNotMatch(sanitized, /123456|654321|777888|1234567890|4111 1111 1111 1111|my secret phrase/);
 });
 
 const bilingualExamples = [
@@ -74,7 +98,8 @@ const bilingualExamples = [
   ["Kiswahili dividends", "Gawio huhesabiwaje?", "sw", /Mwenyekiti au Mweka Hazina/i],
   ["Kiswahili elections", "Uchaguzi wa chama unaendaje?", "sw", /Mwenyekiti au Katibu/i],
   ["Kiswahili group chat", "Nataka gumzo la kikundi", "sw", /Wanachama walio hai/i],
-  ["Kiswahili human support", "Nahitaji kuzungumza na mhudumu wa msaada", "sw", /Wasilisha ombi la msaada/i],
+  ["English human support", "I want to talk to human support", "en", /Replies usually take 5–7 working days/],
+  ["Kiswahili human support", "Nahitaji kuzungumza na mhudumu wa msaada", "sw", /siku 5–7 za kazi/],
 ];
 
 for (const [scenario, message, language, expectedText] of bilingualExamples) {

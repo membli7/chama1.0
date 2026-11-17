@@ -7,9 +7,13 @@ This is the assistant's maintained answer source, not a standalone help report. 
 - Follow the current decisions in the repository's `TASKS.md` and the behavior enforced by the server. A historical decision marked superseded is not current policy.
 - Chama settings and loan policies are group-specific. When the chat request includes the signed-in user's Chama settings, the service fills `{{deadline}}`, `{{welfareFee}}`, `{{latePenalty}}`, and `{{loanRate}}`; it fills `{{loanPolicyDetails}}` only from that Chama's latest saved policy. When a value is unavailable, the answer says to check that Chama's configured rule; never substitute a guessed universal amount or threshold.
 - The assistant has no authority to see or infer a member's balance, payment status, application status, or private records from this document. Only state a personal fact if trusted live context explicitly supplies it; otherwise direct the person to the relevant dashboard or human support.
-- Do not promise that money is sent, collected, reconciled, or disbursed by the app. Do not claim a fixed eligibility multiple, fine amount, review deadline, or other rule unless the current Chama setting or an authoritative source explicitly provides it.
-- If no topic below answers the question, say that the approved knowledge does not contain the answer, ask one useful clarifying question if appropriate, and offer the in-app support ticket. Do not invent policy.
+- Do not promise that money is sent, collected, reconciled, or disbursed by the app. Do not claim a fixed eligibility multiple, fine amount, review deadline, or other rule unless the current Chama setting or an authoritative source explicitly provides it. The usual human-support reply estimate is 5–7 working days; state it as usual, never guaranteed.
+- If no topic below answers the question, say that the approved knowledge does not contain the answer, ask one useful clarifying question if appropriate, and offer the unanswered-question email form or in-app support ticket. Do not invent policy.
 - Never ask a user to disclose a PIN, password, one-time code, or recovery code in chat.
+
+## Agent behavior
+
+The full support-agent behavior contract is `skills/jirani-chama-support/SKILL.md`. The live assistant is a deterministic in-house FAQ/intent router, not an external LLM; keep its implementation in `support-service.js` and `../en public/react/src/components/AiSupportBubble.jsx` aligned with that contract. The current Chama knowledge, server behavior, and configured support destinations remain authoritative for product facts and available actions.
 
 ## intent:welcome
 **Triggers (English):**
@@ -143,9 +147,9 @@ Wanachama walio hai wanaweza kutumia mazungumzo ya kikundi ndani ya programu. Hi
 **Triggers (English):** human support | support agent | talk to a person | contact support | support ticket | representative | customer service
 **Triggers (Kiswahili):** mhudumu wa msaada | msaada wa kibinadamu | kuzungumza na mtu | wasiliana na msaada | ombi la msaada | huduma kwa wateja
 ### English
-Submit an in-app support ticket and describe the issue. You can attach supporting material where the ticket form allows it. A human reviewer can follow up through the ticket. No response deadline is promised here. Do not include a PIN, password, or one-time code in the ticket.
+Submit an in-app support ticket and describe the issue. You can attach supporting material where the ticket form allows it. A human reviewer can follow up through the ticket. Replies usually take 5–7 working days; this is an estimate, not a guaranteed deadline. Do not include a PIN, password, or one-time code in the ticket.
 ### Kiswahili
-Wasilisha ombi la msaada ndani ya programu na ueleze tatizo. Unaweza kuambatisha taarifa za kusaidia pale fomu ya ombi inapokubali. Mhudumu wa kibinadamu anaweza kufuatilia kupitia ombi hilo. Hakuna muda maalum wa kujibiwa ulioahidiwa hapa. Usiweke PIN, nenosiri au msimbo wa mara moja kwenye ombi.
+Wasilisha ombi la msaada ndani ya programu na ueleze tatizo. Unaweza kuambatisha taarifa za kusaidia pale fomu ya ombi inapokubali. Mhudumu wa kibinadamu anaweza kufuatilia kupitia ombi hilo. Kwa kawaida, majibu huchukua siku 5–7 za kazi; huu ni muda wa kawaida tu, si tarehe ya uhakika. Usiweke PIN, nenosiri au msimbo wa mara moja kwenye ombi.
 
 ## intent:faq-not-translated
 **Triggers (English):**
@@ -159,6 +163,6 @@ Nimepata swali la msaada linalohusiana, lakini jibu lake linapatikana kwa Kiinge
 **Triggers (English):**
 **Triggers (Kiswahili):**
 ### English
-I don't have a reliable answer to that in the approved Chama knowledge yet, and I don't want to guess. Which Chama feature or action are you asking about? You can also submit an in-app support ticket for a human response. I cannot see your personal balance, payment status, or loan record from this knowledge document.
+I don't have a reliable answer to that in the approved Chama knowledge yet, and I don't want to guess. It needs a human support response. Which Chama feature or action are you asking about? You can review your email and question in the form below to send them to human support, or submit an in-app support ticket. Please do not include passwords, PINs, one-time codes, full account numbers, or payment-card details. I cannot see your personal balance, payment status, or loan record from this knowledge document.
 ### Kiswahili
-Bado sina jibu la kuaminika kwa swali hilo kwenye maarifa yaliyoidhinishwa ya chama, na sitaki kubahatisha. Unauliza kuhusu kipengele au hatua gani ya chama? Unaweza pia kuwasilisha ombi la msaada ndani ya programu ili mhudumu wa kibinadamu akujibu. Siwezi kuona salio lako, hali ya malipo au rekodi ya mkopo kupitia hati hii ya maarifa.
+Bado sina jibu la kuaminika kwa swali hilo kwenye maarifa yaliyoidhinishwa ya chama, na sitaki kubahatisha. Linahitaji jibu kutoka kwa timu ya msaada wa kibinadamu. Unauliza kuhusu kipengele au hatua gani ya chama? Unaweza kukagua barua pepe na swali lako kwenye fomu iliyo hapa chini na kuyatuma kwa timu ya msaada, au uwasilishe ombi la msaada ndani ya programu. Tafadhali usiweke nenosiri, PIN, msimbo wa mara moja, nambari kamili ya akaunti au maelezo ya kadi ya malipo. Siwezi kuona salio lako, hali ya malipo au rekodi ya mkopo kupitia hati hii ya maarifa.

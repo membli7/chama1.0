@@ -112,6 +112,23 @@ test("contact form emails the fixed inbox and sets the sender as Reply-To after 
   fs.rmSync(logDir, { recursive: true, force: true });
 });
 
+test("contact email redacts secrets and payment details before delivery", async () => {
+  const logDir = fs.mkdtempSync(path.join(os.tmpdir(), "jirani-contact-redaction-"));
+  const logFile = path.join(logDir, "sent-mail.jsonl");
+  const server = await startTestServer({ emailEnabled: true, logFile });
+  const response = await postContact(server, {
+    ...validMessage,
+    subject: "Unanswered question from Jirani Chama AI Assistant",
+    message: "My PIN is 123456; OTP 654321; account number: 1234567890; card 4111 1111 1111 1111; CVC: 123; password: secret"
+  });
+
+  assert.equal(response.status, 200);
+  const payload = JSON.parse(fs.readFileSync(logFile, "utf8").trim().split("\n")[0]);
+  assert.match(payload.text, /\[redacted\]/);
+  assert.doesNotMatch(payload.text, /123456|654321|1234567890|4111 1111 1111 1111|secret/);
+  fs.rmSync(logDir, { recursive: true, force: true });
+});
+
 test("contact form reports unavailable rather than success when email is not configured", async () => {
   const server = await startTestServer({ emailEnabled: false });
   const response = await postContact(server);

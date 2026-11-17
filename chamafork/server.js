@@ -1401,7 +1401,7 @@ app.post("/api/contact", sharedRateLimit("contact", {
   const name = clean(raw.name);
   const email = normalizeEmail(raw.email);
   const subject = clean(raw.subject);
-  const message = clean(raw.message).replace(/\r\n?/g, "\n");
+  const message = supportService.sanitizeSupportSubmissionText(clean(raw.message).replace(/\r\n?/g, "\n"));
   const headerControl = /[\u0000-\u001f\u007f]/;
   const messageControl = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/;
   if (!name || name.length > 100 || headerControl.test(name)
