@@ -1,0 +1,5 @@
+2026-11-07T15:47:20.991Z Starting disposable primary and registration servers
+2026-11-07T15:47:21.399Z Primary server healthy on loopback port 59788
+2026-11-07T15:47:21.753Z Registration server healthy on loopback port 59794
+2026-11-07T15:47:21.760Z Started isolated Chrome DevTools session on loopback port 53463
+2026-11-07T15:47:29.597Z Failed: Chrome DevTools command timed out: Page.enable

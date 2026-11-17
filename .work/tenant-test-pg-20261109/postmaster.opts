@@ -1,0 +1,1 @@
+C:/Program Files/PostgreSQL/18/bin/postgres.exe "-D" "C:\Users\ADMIN\Desktop\chama1.0\.work\tenant-test-pg-20261109" "-h" "127.0.0.1" "-p" "55432" "-c" "listen_addresses=127.0.0.1" "-c" "ssl=off"

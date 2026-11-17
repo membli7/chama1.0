@@ -1,0 +1,1 @@
+AUTH_EXIT_CODE=2

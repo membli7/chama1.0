@@ -1,0 +1,5 @@
+2026-11-09 21:41:41.187 EAT [26704] LOG:  starting PostgreSQL 18.6 on x86_64-windows, compiled by msvc-19.44.35229, 64-bit
+2026-11-09 21:41:41.190 EAT [26704] LOG:  listening on IPv4 address "127.0.0.1", port 55432
+2026-11-09 21:41:41.322 EAT [5596] LOG:  database system was shut down at 2026-11-09 21:40:52 EAT
+2026-11-09 21:41:41.337 EAT [26704] LOG:  database system is ready to accept connections
+2026-11-09 21:41:44.151 EAT [31708] FATAL:  role "msn_ozyzrewr6o7ihsx7" does not exist

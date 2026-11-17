@@ -1,0 +1,30 @@
+2026-11-10 00:15:33.251 EAT [26872] LOG:  starting PostgreSQL 18.6 on x86_64-windows, compiled by msvc-19.44.35229, 64-bit
+2026-11-10 00:15:33.252 EAT [26872] LOG:  listening on IPv4 address "127.0.0.1", port 64704
+2026-11-10 00:15:33.347 EAT [28224] LOG:  database system was shut down at 2026-11-09 23:25:06 EAT
+2026-11-10 00:15:33.428 EAT [26872] LOG:  database system is ready to accept connections
+2026-11-10 00:17:07.981 EAT [35764] FATAL:  role "ADMIN" does not exist
+2026-11-10 00:20:33.353 EAT [39496] LOG:  checkpoint starting: time
+2026-11-10 00:20:33.376 EAT [39496] LOG:  checkpoint complete: wrote 0 buffers (0.0%), wrote 3 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.006 s, sync=0.004 s, total=0.024 s; sync files=2, longest=0.002 s, average=0.002 s; distance=0 kB, estimate=0 kB; lsn=0/1E1A538, redo lsn=0/1E1A4E0
+2026-11-10 00:26:56.880 EAT [26872] LOG:  received smart shutdown request
+2026-11-10 00:26:56.889 EAT [26872] LOG:  background worker "logical replication launcher" (PID 37848) exited with exit code 1
+2026-11-10 00:26:56.890 EAT [39496] LOG:  shutting down
+2026-11-10 00:26:56.891 EAT [39496] LOG:  checkpoint starting: shutdown immediate
+2026-11-10 00:26:56.899 EAT [39496] LOG:  checkpoint complete: wrote 0 buffers (0.0%), wrote 0 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.001 s, sync=0.001 s, total=0.010 s; sync files=0, longest=0.000 s, average=0.000 s; distance=0 kB, estimate=0 kB; lsn=0/1E1A5E8, redo lsn=0/1E1A5E8
+2026-11-10 00:26:56.919 EAT [26872] LOG:  database system is shut down
+2026-11-10 00:26:58.881 EAT [29972] LOG:  starting PostgreSQL 18.6 on x86_64-windows, compiled by msvc-19.44.35229, 64-bit
+2026-11-10 00:26:58.882 EAT [29972] LOG:  listening on IPv4 address "127.0.0.1", port 64704
+2026-11-10 00:26:58.945 EAT [41500] LOG:  database system was shut down at 2026-11-10 00:26:56 EAT
+2026-11-10 00:26:58.955 EAT [29972] LOG:  database system is ready to accept connections
+2026-11-10 00:30:04.068 EAT [25216] FATAL:  role "<role>" does not exist
+2026-11-10 00:31:58.947 EAT [29324] LOG:  checkpoint starting: time
+2026-11-10 00:31:58.963 EAT [29324] LOG:  checkpoint complete: wrote 0 buffers (0.0%), wrote 3 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.003 s, total=0.017 s; sync files=2, longest=0.002 s, average=0.002 s; distance=0 kB, estimate=0 kB; lsn=0/1E1A6F0, redo lsn=0/1E1A698
+2026-11-10 00:36:17.334 EAT [39020] FATAL:  role "ADMIN" does not exist
+2026-11-10 01:11:41.606 EAT [18212] FATAL:  role "ADMIN" does not exist
+2026-11-10 01:31:59.013 EAT [29324] LOG:  checkpoint starting: time
+2026-11-10 01:31:59.927 EAT [29324] LOG:  checkpoint complete: wrote 8 buffers (0.0%), wrote 0 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.892 s, sync=0.010 s, total=0.915 s; sync files=8, longest=0.003 s, average=0.002 s; distance=16 kB, estimate=16 kB; lsn=0/1E1E948, redo lsn=0/1E1E8F0
+2026-11-10 08:51:02.566 EAT [39488] FATAL:  role "ADMIN" does not exist
+2026-11-10 09:09:56.748 EAT [29972] LOG:  background worker "logical replication launcher" (PID 22812) was terminated by exception 0xC000013A
+2026-11-10 09:09:56.748 EAT [29972] HINT:  See C include file "ntstatus.h" for a description of the hexadecimal value.
+2026-11-10 09:09:56.749 EAT [29972] LOG:  terminating any other active server processes
+2026-11-10 09:09:56.837 EAT [29972] LOG:  received fast shutdown request
+^C

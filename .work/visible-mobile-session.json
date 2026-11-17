@@ -1,0 +1,15 @@
+{
+  "url": "http://127.0.0.1:51674/",
+  "port": 51674,
+  "launcherPid": 23660,
+  "serverPid": 8628,
+  "chromePid": 12840,
+  "dataFile": "C:\\Users\\ADMIN\\Desktop\\chama1.0\\.work\\visible-mobile-data\\data.json",
+  "logFile": "C:\\Users\\ADMIN\\Desktop\\chama1.0\\.work\\visible-mobile-server.log",
+  "profileDir": "C:\\Users\\ADMIN\\Desktop\\chama1.0\\.work\\chrome-visible-mobile-profile",
+  "credentials": {
+    "phone": "+254711000001",
+    "pin": "123456"
+  },
+  "payment": "disabled; no provider calls"
+}

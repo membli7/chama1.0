@@ -1,0 +1,15 @@
+{
+  "report": {
+    "viewports": [],
+    "footer": [],
+    "navigation": [],
+    "pricing": [],
+    "forms": [],
+    "subscriptions": {},
+    "chat": {},
+    "errors": [],
+    "screenshots": []
+  },
+  "failures": [],
+  "error": "Chrome DevTools command timed out: Page.enable"
+}
