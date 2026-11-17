@@ -34,6 +34,27 @@ test("all existing interactive URLs have a built React mount and local JavaScrip
   }
 });
 
+test("the AI support bubble ships with fixed floating styles on every React page", () => {
+  const main = readSource("src/main.jsx");
+  const app = readSource("src/App.jsx");
+
+  assert.match(main, /import "\.\.\/\.\.\/support\.css";/);
+  assert.match(app, /<AiSupportBubble \/>/);
+
+  for (const page of interactivePages) {
+    const html = fs.readFileSync(path.join(buildRoot, page), "utf8");
+    const cssPaths = [...html.matchAll(/href="(\/assets\/[^\"]+\.css)"/g)]
+      .map(([, asset]) => path.join(buildRoot, asset.slice(1)))
+      .filter(cssPath => fs.existsSync(cssPath));
+    const bubbleStyles = cssPaths
+      .map(cssPath => fs.readFileSync(cssPath, "utf8"))
+      .find(css => /\.ai-bubble-container\s*\{[^}]*position:\s*fixed;/.test(css));
+
+    assert.ok(bubbleStyles, `${page} must load the floating AI support styles`);
+    assert.match(bubbleStyles, /\.ai-bubble-container\s*\{[^}]*bottom:\s*24px;[^}]*right:\s*24px(?:;|\})/);
+  }
+});
+
 test("the dashboard exposes an accessible bilingual Help & Guide for core chama tasks", () => {
   const dashboard = fs.readFileSync(path.join(sourceRoot, "..", "index.html"), "utf8");
   const localeSource = fs.readFileSync(path.join(sourceRoot, "..", "i18n.js"), "utf8");

@@ -5,6 +5,7 @@ import "../../i18n.js";
 import "../../write-requests.js";
 import App from "./App.jsx";
 import PwaRuntime from "./components/PwaRuntime.jsx";
+import "../../support.css";
 import "./pwa.css";
 
 const mountNode = document.getElementById("root");
