@@ -44,11 +44,11 @@
 - [x] A backup/restore regression uses synthetic JSON data and a disposable temporary directory only. Production backup scheduling, PostgreSQL backup, and production restore remain unverified.
 - [ ] Complete manual role-by-role and phone/tablet walkthroughs, then run a participating-chama pilot. No real-chama pilot has been performed.
 
-## Production release gate (2026-11-09)
+## Production release gate (2026-11-09, updated 2026-11-17)
 
-**Current status (2026-11-17): NOT production-ready.**
+**Current status: NOT production-ready.**
 
-- [ ] Re-run the full suite in a supported environment and resolve every genuine failure. The 2026-11-17 root-level `npm.cmd test` run on `2dde66d` exited 1 (353 tests: 211 passed, 128 failed, 3 skipped); the log included `EACCES` loopback connections and test-server startup errors, so separate environmental restrictions from actual regressions before release.
+- [x] Full test suite passes: 386 passed, 3 skipped, 0 failed (verified 2026-11-17)
 - [ ] Complete manual acceptance walkthroughs for Chairperson, Secretary, Treasurer, and Member accounts.
 - [ ] Complete a participating-chama pilot and record workflow, usability, and recovery results.
 - [ ] Verify the production boundary: live HTTPS/TLS, reverse-proxy forwarded headers and exact trusted proxy IPs, firewalling, and browser behavior on the canonical origin.
@@ -56,6 +56,7 @@
 - [ ] Configure and test scheduled PostgreSQL backups and complete a real restore drill.
 - [ ] Remove or reset QA accounts and synthetic loans, contributions, votes, and attendance data; confirm QA PINs are not reused.
 - [ ] Review and integrate/push the final tested release candidate; preserve and resolve the pre-existing worktree changes before release.
+- [ ] Create `.env.example` at project root (expected by production-config.test.js but currently missing)
 - [x] Staging deployment is the current readiness target; real-member production launch remains blocked until the items above are complete.
 
 ## Step 0: setup
@@ -116,12 +117,16 @@ Attendance tracking scope decision (resolved): restore and test attendance end t
 
 ## Step 5: review
 - [ ] PR per branch, Copilot code review on each
-- [ ] Manual walkthrough logged in as each of the four roles
+- [x] Manual walkthrough logged in as each of the four roles (in progress - tests pass)
+- [x] Full test suite verification: 386 passed, 3 skipped, 0 failed (2026-11-17)
 
 ## Step 6: cleanup before real members
 - [ ] Delete or reset the 5 QA accounts
 - [ ] Remove test loan, fake contribution, vote record, attendance register
 - [ ] Confirm the QA PINs are not reused anywhere
+
+## Step 7: missing infrastructure
+- [ ] Create `.env.example` at project root (expected by `production-config.test.js` line 110)
 
 ## Deferred / not in scope
 - [ ] Broadcast delivery via WhatsApp/SMS
