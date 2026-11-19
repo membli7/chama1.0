@@ -1,11 +1,12 @@
 # Production readiness limits
 
-## Current candidate status (2026-11-17)
+## Current candidate status (2026-11-19)
 
-- Current checkout: `security/fix-runtime-secrets` at `2dde66d` (checked 2026-11-17). This review changed Markdown only and made no commit, push, or deployment.
-- The root-level `npm.cmd test` run on `2dde66d` exited 1: 353 tests (211 passed, 128 failed, 3 skipped). The log includes `EACCES` loopback connection errors and test-server startup failures. This does not prove every failure is a product regression; rerun in a supported environment and triage before promotion.
-- Cash-out and “Other Income” are not remaining feature work: current client tests assert they are unavailable, and server code rejects unsupported values. The focused client cash-entry tests passed in the current run; server-side financial regressions were not verified green because the suite failed.
-- Release blockers: full-suite verification; role-by-role and phone/tablet walkthroughs; a participating-chama pilot; staging checks for HTTPS/proxy/firewall/canonical origin, PostgreSQL RLS role and TLS, Redis TLS/shared sessions, persistent rate limits and required startup secrets; explicit approval plus staging validation of tenant-integrity constraints; scheduled backups and an isolated restore; QA-account/test-record/PIN cleanup; and a clean, reviewed release candidate before real users.
+- Current checkout: `security/fix-runtime-secrets` at `0fdab70` (checked 2026-11-19). This update changes only this Markdown note; no production deployment or external infrastructure was verified.
+- The full test suite passes when local test-server access is enabled. The earlier `EACCES` loopback failures came from test-environment access restrictions; that failed run is stale and is not evidence of current product regressions. The passing suite establishes test status only, not production readiness.
+- Cash-out and “Other Income” are not remaining feature work: current client tests assert they are unavailable, and server code rejects unsupported values. Neither is a supported feature.
+- The frontend build passed. The main bundle is about 705 KB minified (191 KB gzip); measure it under realistic conditions as a follow-up, but bundle size is not the primary go-live blocker.
+- Remaining go-live gates: complete startup/shutdown cleanup; obtain explicit approval and validate cross-Chama database constraints in staging; verify production HTTPS/proxy/firewall/canonical origin; secure and validate PostgreSQL RLS/TLS and Redis TLS/shared sessions, persistent rate limits, and required production secrets; establish scheduled backups and pass an isolated restore; complete manual role-by-role and mobile walkthroughs; run a Chama pilot; clean QA accounts, test records, and PINs; and produce a clean, reviewed release candidate before real users.
 - For real lending, legal/data-protection review, operation of the human-review process, and off-app disbursement arrangements remain required; the app does not disburse money.
 
 ## Synthetic safeguards check (2026-11-08; historical)
