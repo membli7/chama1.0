@@ -4,6 +4,8 @@
     "test": "node --require ./chamafork/test/test-env.js --test",
 
     "build": "node --check chamafork/server.js",
+    "backup": "node chamafork/scripts/backup.js create",
+    "restore": "node chamafork/scripts/backup.js restore",
     "start": "node chamafork/server.js"
   },
   "dependencies": {

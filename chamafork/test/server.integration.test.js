@@ -166,9 +166,17 @@ describe("Jirani Chama server", () => {
     assert.equal(liveness.status, 200);
     assert.deepEqual(await json(liveness), { status: "ok" });
 
+    const healthz = await request("/healthz");
+    assert.equal(healthz.status, 200);
+    assert.deepEqual(await json(healthz), { status: "ok" });
+
     const readiness = await request("/api/health/ready");
     assert.equal(readiness.status, 200);
     assert.deepEqual(await json(readiness), { status: "ok" });
+
+    const readyz = await request("/readyz");
+    assert.equal(readyz.status, 200);
+    assert.deepEqual(await json(readyz), { status: "ok" });
 
     const health = await request("/api/health");
     assert.equal(health.status, 200);

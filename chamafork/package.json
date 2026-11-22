@@ -11,6 +11,8 @@
   },
   "scripts": {
     "db:migrate": "node db/migrate.js",
+    "backup": "node scripts/backup.js create",
+    "restore": "node scripts/backup.js restore",
     "build:frontend": "vite build --config \"../en public/react/vite.config.mjs\"",
     "prestart": "npm run build:frontend",
     "pretest": "npm run build:frontend",

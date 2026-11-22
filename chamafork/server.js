@@ -1350,7 +1350,10 @@ app.get("/metrics", (req, res) => metricsAuthorized(req) ? metricsHandler(req, r
 app.use((req, res, next) => {
   res.setHeader("Content-Security-Policy", "default-src 'self'; base-uri 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self'; object-src 'none'; script-src 'self'; style-src 'self'");
   if (req.secure && (process.env.NODE_ENV === "production" || process.env.FORCE_HTTPS_REDIRECT === "1")) {
-    res.setHeader("Strict-Transport-Security", "max-age=31536000");
+    const hstsValue = process.env.HSTS_INCLUDE_SUBDOMAINS === "1"
+      ? "max-age=31536000; includeSubDomains"
+      : "max-age=31536000";
+    res.setHeader("Strict-Transport-Security", hstsValue);
   }
   if (req.path.startsWith("/api/")) res.setHeader("Cache-Control", "no-store");
   else if (["/", "/index.html", "/chama.js", "/chama.css", "/i18n.js", "/write-requests.js"].includes(req.path) || /^\/profile[^/]*\.(?:js|html)$/.test(req.path)) {
@@ -1571,8 +1574,8 @@ app.use(express.static(FRONTEND_BUILD, {
 }));
 app.use(express.static(FRONTEND));
 app.get("/", (req, res) => res.sendFile(path.join(FRONTEND, "index.html")));
-app.get("/api/health/live", (_req, res) => res.json({ status: "ok" }));
-app.get(["/api/health", "/api/health/ready"], async (req, res) => {
+app.get(["/healthz", "/api/health/live"], (_req, res) => res.json({ status: "ok" }));
+app.get(["/readyz", "/api/health", "/api/health/ready"], async (req, res) => {
   const dependencies = { postgres: DATA_BACKEND === "postgres" ? "unavailable" : "not_required", redis: sessionBackend.usingRedis ? "unavailable" : "not_required" };
   try {
     if (DATA_BACKEND === "postgres") {
