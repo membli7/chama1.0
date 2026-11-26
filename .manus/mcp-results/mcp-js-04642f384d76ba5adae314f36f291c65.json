@@ -1,6 +1,0 @@
-In-app Browser JS state was preserved. Completed actions were not rolled back; refresh stale UI handles and continue only the remaining work.
-{"code":"SCRIPT_FAILED","method":"browser_evaluate_readonly","callIndex":1,"nextAction":"observe_again"}
-ERROR SCRIPT_FAILED
-{"control":{"documentRevision":"rev_080df7c8-0354-4357-b720-09c175a1e1c8","error":{"code":"SCRIPT_FAILED","retryable":false},"requiresSnapshot":true,"status":"error","tabId":"tab_067e6c1a-96c5-4d4b-8ae7-4e567cd85dfa"},"kind":"error","schema":"manus.browser/v1","warnings":["Read-only callback failed; check the expression and guard absent or redacted values."]}
-ERROR SCRIPT_FAILED
-{"control":{"documentRevision":"rev_080df7c8-0354-4357-b720-09c175a1e1c8","error":{"code":"SCRIPT_FAILED","retryable":false},"requiresSnapshot":true,"status":"error","tabId":"tab_067e6c1a-96c5-4d4b-8ae7-4e567cd85dfa"},"kind":"error","schema":"manus.browser/v1","warnings":["Read-only callback failed; check the expression and guard absent or redacted values."]}
